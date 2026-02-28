@@ -1,16 +1,47 @@
-# React + Vite
+# Plataforma Académica Institucional
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este proyecto es un prototipo funcional de un sistema de seguimiento académico inteligente con dashboards para 7 roles institucionales.
 
-Currently, two official plugins are available:
+## 🚀 Cómo Iniciar el Proyecto
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Para que el sistema funcione correctamente, debes iniciar tanto el **Backend** como el **Frontend**.
 
-## React Compiler
+### 1. Preparar el Backend (API)
+Abre una terminal y ejecuta:
+```bash
+cd backend
+npm install
+node database/seed.js   # Solo una vez para cargar los datos de prueba
+npm start
+```
+*El backend correrá en http://localhost:3000*
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. Preparar el Frontend (SPA)
+Abre **otra terminal** (sin cerrar la anterior) y ejecuta:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+*El sitio estará disponible en http://localhost:5173*
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🌐 Despliegue (Deploy)
+
+### Frontend
+La forma más sencilla de desplegar el frontend es usando **Vercel** o **Netlify**:
+1. Sube la carpeta `frontend` a un repositorio de GitHub.
+2. Conecta el repositorio a Vercel.
+3. El comando de build será `npm run build` y la carpeta de salida `dist`.
+
+### Backend
+Puedes usar **Railway**, **Render** o **DigitalOcean**:
+1. Sube el backend a GitHub.
+2. Conecta a la plataforma elegida.
+3. Recuerda configurar las variables de entorno (`JWT_SECRET`, etc.) en el panel de control del hosting.
+
+---
+
+## 🔑 Credenciales de Prueba
+Consulta el archivo [walkthrough.md](file:///C:/Users/Deison/.gemini/antigravity/brain/f4ee46be-98d8-4f9f-abf5-0da788065f34/walkthrough.md) para ver la lista completa de usuarios y contraseñas.
