@@ -36,7 +36,7 @@ const Layout = {
                         ${user.rol === 'director' || user.rol === 'decano' ? this.navItem('/director', 'bar-chart-3', 'Métricas SIS') : ''}
                         ${user.rol === 'registro' ? this.navItem('/registro', 'users', 'Gestión Usuarios') : ''}
                         ${user.rol === 'financiero' ? this.navItem('/financial', 'wallet', 'Cartera') : ''}
-                        ${user.rol === 'admin' ? this.navItem('/admin', 'shield-check', 'Admin TI') : ''}
+                        ${user.rol === 'admin' ? this.navItem('/admin', 'shield-check', 'Admin Usuarios') : ''}
                         
                         <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-8 mb-4 px-4">Operaciones</div>
                         ${user.rol === 'estudiante' ? this.navItem('/profile', 'user-circle', 'Mi Perfil') : ''}
@@ -114,7 +114,7 @@ const Layout = {
             '#/director': 'Analítica SIS',
             '#/registro': 'Registro Académico',
             '#/financial': 'Módulo Financiero',
-            '#/admin': 'Consola de Administración',
+            '#/admin': 'Admin Usuarios',
             '#/change-password': 'Seguridad'
         };
         return routes[hash] || 'Plataforma';

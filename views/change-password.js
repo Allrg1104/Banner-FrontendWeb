@@ -4,9 +4,9 @@
  */
 
 Views['change-password'] = {
-  async render() {
-    const user = Auth.getUser();
-    return `
+    async render() {
+        const user = Auth.getUser();
+        return `
             <div class="premium-bg"></div>
             <div class="flex min-h-screen items-center justify-center p-6 bg-slate-50/50">
                 
@@ -55,49 +55,65 @@ Views['change-password'] = {
                             Finalizar y Entrar
                             <i data-lucide="arrow-right" class="w-5 h-5"></i>
                         </button>
+                        
+                        <button type="button" id="cancel-change-pwd" class="w-full py-4 text-slate-400 font-bold uppercase tracking-widest text-[10px] hover:text-slate-600 transition-colors">
+                            Cancelar operación
+                        </button>
                     </form>
                 </div>
             </div>
         `;
-  },
+    },
 
-  afterRender() {
-    lucide.createIcons();
-    const form = document.getElementById('change-pwd-form');
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = e.target.querySelector('button');
-      const originalContent = btn.innerHTML;
-
-      const newPassword = document.getElementById('new-password').value;
-      const confirmPassword = document.getElementById('confirm-password').value;
-
-      if (newPassword !== confirmPassword) {
-        return Toast.error('Las contraseñas no coinciden');
-      }
-
-      btn.disabled = true;
-      btn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Actualizando...';
-
-      try {
-        // En este prototipo simulamos el cambio exitoso
-        // En producción aquí iría el llamado a confirm-password-change
-
-        Toast.success('Seguridad actualizada. Bienvenido.');
-
+    afterRender() {
+        lucide.createIcons();
         const user = Auth.getUser();
-        user.must_change_password = false;
-        Auth.login(Auth.getToken(), user); // Update session
+        const form = document.getElementById('change-pwd-form');
+        const cancelBtn = document.getElementById('cancel-change-pwd');
 
-        setTimeout(() => {
-          Router.redirectToDashboard();
-        }, 1200);
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                if (user?.must_change_password) {
+                    Auth.logout();
+                } else {
+                    Router.redirectToDashboard();
+                }
+            });
+        }
 
-      } catch (err) {
-        Toast.error('Error al actualizar seguridad');
-        btn.disabled = false;
-        btn.innerHTML = originalContent;
-      }
-    });
-  }
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalContent = btn.innerHTML;
+
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (newPassword !== confirmPassword) {
+                return Toast.error('Las contraseñas no coinciden');
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Actualizando...';
+
+            try {
+                await API.post('/auth/change-password', { newPassword });
+
+                Toast.success('Seguridad actualizada. Bienvenido.');
+
+                const user = Auth.getUser();
+                user.must_change_password = false;
+                sessionStorage.setItem('user', JSON.stringify(user));
+
+                setTimeout(() => {
+                    Router.redirectToDashboard();
+                }, 1200);
+
+            } catch (err) {
+                Toast.error(err.message || 'Error al actualizar seguridad');
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        });
+    }
 };

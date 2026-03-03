@@ -107,7 +107,7 @@ Views.admin = {
           </div>
           <div class="flex flex-col items-end">
             <span id="stat-value-${label}" class="text-4xl font-black text-slate-900 leading-none mb-1" style="font-family: 'Outfit'">${value}</span>
-            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base de Datos</span>
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuarios</span>
           </div>
         </div>
         <div class="relative z-10">
@@ -302,100 +302,364 @@ Views.admin = {
         const isEdit = !!user;
         const modalContent = document.getElementById('modal-content');
         const container = document.getElementById('modal-container');
-
         if (!modalContent || !container) return;
 
+        // Expand modal for this view
+        modalContent.className = 'bg-white rounded-[2.5rem] shadow-2xl max-w-6xl w-full transform transition-all overflow-hidden border border-slate-100';
+
+        // Parse metadata with defaults matching the user's required list
+        let metadata = {
+            segundo_nombre: '-',
+            estado_civil: 'Soltero(a)',
+            sexo: 'Masculino',
+            nombre_preferido: '-',
+            identificacion_genero: 'Masculino',
+            email_personal: '',
+            direccion: 'CRA 94A 2 41',
+            emergencia: [
+                { nombre: 'JANETH ORTIZ', parentesco: 'Acudiente', telefono: '317 4169964', direccion: 'CRA 94A 2 41, Cali, Valle 76001' },
+                { nombre: 'DEYSON FERNANDO ESPINOSA', parentesco: 'Acudiente', telefono: '311 7246085', direccion: 'Cali, Valle 76001' }
+            ],
+            discapacidad: 'Status no disponible'
+        };
+
+        if (isEdit && user.metadata) {
+            try {
+                const parsed = typeof user.metadata === 'string' ? JSON.parse(user.metadata) : user.metadata;
+                metadata = { ...metadata, ...parsed };
+            } catch (e) { console.error('Error parsing metadata', e); }
+        }
+
         modalContent.innerHTML = `
-        <div class="p-8">
-            <div class="flex items-center justify-between mb-8">
-                <h2 class="text-2xl font-black text-slate-900" style="font-family: 'Outfit'">${isEdit ? 'Editar Usuario' : 'Nuevo Usuario'}</h2>
-                <button onclick="document.getElementById('modal-container').classList.add('hidden')" class="text-slate-400 hover:text-red-500 transition-colors">
-                    <i data-lucide="x" class="w-6 h-6"></i>
+        <div class="max-h-[85vh] overflow-y-auto custom-scrollbar">
+            <!-- Modal Header -->
+            <div class="sticky top-0 bg-white z-20 px-10 py-8 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-6">
+                    <div class="w-16 h-16 rounded-2xl bg-[#032840] flex items-center justify-center text-[#fab720] shadow-xl">
+                        <i data-lucide="${isEdit ? 'user-cog' : 'user-plus'}" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-black text-slate-900 leading-tight" style="font-family: 'Outfit'">
+                            ${isEdit ? 'Expediente Institucional' : 'Registro de Nuevo Integrante'}
+                        </h2>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1 italic">
+                            Administración Usuarios / Gestión de Identidades Globales
+                        </p>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('modal-container').classList.add('hidden')" 
+                    class="w-12 h-12 rounded-full flex items-center justify-center hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all group">
+                    <i data-lucide="x" class="w-6 h-6 group-hover:rotate-90 transition-transform"></i>
                 </button>
             </div>
 
-            <form id="user-form" class="grid grid-cols-2 gap-6">
-                <div class="col-span-1">
-                    <label class="label-premium">Nombres</label>
-                    <input type="text" id="m-nombres" value="${isEdit ? user.nombres : ''}" class="input-premium" required>
+            <form id="user-form" class="p-10 space-y-12 pb-24">
+                
+                <!-- SECCIÓN 1: DETALLES PERSONALES -->
+                <div class="space-y-8">
+                    <div class="flex items-center gap-4">
+                        <div class="h-8 w-1.5 bg-[#fab720] rounded-full"></div>
+                        <h3 class="text-xs font-black uppercase tracking-[0.3em] text-[#032840]">Detalles Personales</h3>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div>
+                            <label class="label-premium">Nombre</label>
+                            <input type="text" id="m-nombres" value="${isEdit ? user.nombres : ''}" class="input-premium" required placeholder="Santiago">
+                        </div>
+                        <div>
+                            <label class="label-premium">Segundo nombre</label>
+                            <input type="text" id="m-segundo-nombre" value="${metadata.segundo_nombre}" class="input-premium" placeholder="-">
+                        </div>
+                        <div>
+                            <label class="label-premium">Apellido</label>
+                            <input type="text" id="m-apellidos" value="${isEdit ? user.apellidos : ''}" class="input-premium" required placeholder="Espinosa Ruiz">
+                        </div>
+                        <div>
+                            <label class="label-premium">Fecha de nacimiento</label>
+                            <input type="text" id="m-nacimiento-text" value="${isEdit && user.fecha_nacimiento ? user.fecha_nacimiento : '7 de mayo de 2004'}" class="input-premium" placeholder="ej: 7 de mayo de 2004">
+                        </div>
+                        <div>
+                            <label class="label-premium">Estado civil</label>
+                            <select id="m-estado-civil" class="input-premium">
+                                <option value="Soltero(a)" ${metadata.estado_civil === 'Soltero(a)' ? 'selected' : ''}>Soltero(a)</option>
+                                <option value="Casado(a)" ${metadata.estado_civil === 'Casado(a)' ? 'selected' : ''}>Casado(a)</option>
+                                <option value="Union Libre" ${metadata.estado_civil === 'Union Libre' ? 'selected' : ''}>Unión Libre</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="label-premium">Sexo</label>
+                            <select id="m-sexo" class="input-premium">
+                                <option value="Masculino" ${metadata.sexo === 'Masculino' ? 'selected' : ''}>Masculino</option>
+                                <option value="Femenino" ${metadata.sexo === 'Femenino' ? 'selected' : ''}>Femenino</option>
+                                <option value="Otro" ${metadata.sexo === 'Otro' ? 'selected' : ''}>Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="label-premium">Nombre preferido</label>
+                            <input type="text" id="m-preferido" value="${metadata.nombre_preferido}" class="input-premium" placeholder="-">
+                        </div>
+                        <div>
+                            <label class="label-premium">Identificación de género</label>
+                            <input type="text" id="m-genero-id" value="${metadata.identificacion_genero}" class="input-premium" placeholder="Masculino">
+                        </div>
+                        <div>
+                            <label class="label-premium">Tipo Documento</label>
+                            <select id="m-tipo-doc" class="input-premium">
+                                <option value="CC" ${user?.tipo_documento === 'CC' ? 'selected' : ''}>CC</option>
+                                <option value="TI" ${user?.tipo_documento === 'TI' ? 'selected' : ''}>TI</option>
+                                <option value="CE" ${user?.tipo_documento === 'CE' ? 'selected' : ''}>CE</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-span-1">
-                    <label class="label-premium">Apellidos</label>
-                    <input type="text" id="m-apellidos" value="${isEdit ? user.apellidos : ''}" class="input-premium" required>
-                </div>
-                <div class="col-span-2">
-                    <label class="label-premium">Cédula / Documento</label>
-                    <input type="text" id="m-doc" value="${isEdit ? user.documento : ''}" class="input-premium" required>
-                </div>
-                <div class="col-span-2">
-                    <label class="label-premium">Correo Institucional</label>
-                    <input type="email" id="m-email" value="${isEdit ? user.email : ''}" class="input-premium" required>
-                </div>
-                <div class="col-span-1">
-                    <label class="label-premium">Nombre de Usuario</label>
-                    <input type="text" id="m-user" value="${isEdit ? user.username : ''}" class="input-premium" required ${isEdit ? 'disabled' : ''}>
-                </div>
-                <div class="col-span-1">
-                    <label class="label-premium">Rol del Sistema</label>
-                    <select id="m-rol" class="input-premium">
-                        <option value="estudiante" ${user?.rol === 'estudiante' ? 'selected' : ''}>Estudiante</option>
-                        <option value="docente" ${user?.rol === 'docente' ? 'selected' : ''}>Docente</option>
-                        <option value="admin" ${user?.rol === 'admin' ? 'selected' : ''}>Admin TI</option>
-                        <option value="registro" ${user?.rol === 'registro' ? 'selected' : ''}>Registro</option>
-                        <option value="financiero" ${user?.rol === 'financiero' ? 'selected' : ''}>Financiero</option>
-                        <option value="director" ${user?.rol === 'director' ? 'selected' : ''}>Director/Decano</option>
-                    </select>
-                </div>
-                ${!isEdit ? `
-                <div class="col-span-2">
-                    <label class="label-premium">Contraseña Temporal</label>
-                    <input type="password" id="m-pass" class="input-premium" required minlength="6">
-                </div>
-                ` : `
-                <div class="col-span-2">
-                    <label class="flex items-center gap-2 ${user.username === 'admin.ti' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}">
-                        <input type="checkbox" id="m-activo" ${user.activo ? 'checked' : ''} ${user.username === 'admin.ti' ? 'disabled' : ''} class="w-5 h-5 rounded border-slate-300">
-                        <span class="text-sm font-bold text-slate-700">Usuario Activo ${user.username === 'admin.ti' ? '(Protegido)' : ''}</span>
-                    </label>
-                </div>
-                `}
 
-                <div class="col-span-2 flex justify-end gap-3 mt-4">
-                    <button type="button" onclick="document.getElementById('modal-container').classList.add('hidden')" class="btn-premium btn-ghost border-slate-200">Cancelar</button>
-                    <button type="submit" class="btn-premium btn-primary px-8">Guardar Cambios</button>
+                <!-- SECCIÓN 2: CORREO Y TELÉFONO -->
+                <div class="space-y-8 border-t border-slate-100 pt-10">
+                    <div class="flex items-center gap-4">
+                        <div class="h-8 w-1.5 bg-blue-500 rounded-full"></div>
+                        <h3 class="text-xs font-black uppercase tracking-[0.3em] text-[#032840]">Comunicación Institucional</h3>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="label-premium text-indigo-600">Correo Institucional</label>
+                            <div class="relative group">
+                                <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300"></i>
+                                <input type="email" id="m-email" value="${isEdit ? user.email : ''}" class="input-premium pl-12 ${isEdit ? 'bg-slate-50 cursor-not-allowed font-bold' : ''}" ${isEdit ? 'readonly' : ''} placeholder="usuario@unicatolica.edu.co">
+                            </div>
+                            <p class="text-[9px] text-slate-400 mt-2 font-bold uppercase tracking-widest">${isEdit ? '(Solo lectura para perfiles existentes)' : '(Se generará automáticamente al escribir el usuario)'}</p>
+                        </div>
+                        <div>
+                            <label class="label-premium">Correo Personal</label>
+                            <input type="email" id="m-email-personal" value="${metadata.email_personal || 'santiago_espinosa10@hotmail.com'}" class="input-premium" placeholder="ejemplo@correo.com">
+                        </div>
+                        <div>
+                            <label class="label-premium">Celular (Principal)</label>
+                            <div class="relative">
+                                <i data-lucide="phone" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300"></i>
+                                <input type="text" id="m-telefono" value="${isEdit && user.telefono ? user.telefono : '3012117114'}" class="input-premium pl-12" placeholder="301...">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="label-premium">Documento / Cédula</label>
+                            <input type="text" id="m-doc" value="${isEdit ? user.documento : ''}" class="input-premium" placeholder="1005234...">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 3: LOCALIZACIÓN Y ACCESO -->
+                <div class="bg-slate-50 p-10 rounded-[2.5rem] border border-slate-200 space-y-8">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-[#032840] flex items-center justify-center text-white">
+                                <i data-lucide="map-pin" class="w-5 h-5"></i>
+                            </div>
+                            <h3 class="text-xs font-black uppercase tracking-[0.3em] text-[#032840]">Residencia y Sistema</h3>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado:</span>
+                            <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm">
+                                <input type="checkbox" id="m-activo" ${isEdit && user.activo ? 'checked' : 'checked'} ${isEdit && user.username === 'admin.ti' ? 'disabled' : ''} class="w-4 h-4 rounded-md border-slate-300 text-emerald-500 focus:ring-emerald-500">
+                                <label for="m-activo" class="text-[10px] font-black uppercase text-slate-700 cursor-pointer">Activo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="col-span-2">
+                            <label class="label-premium">Dirección de Residencia</label>
+                            <input type="text" id="m-direccion" value="${metadata.direccion}" class="input-premium bg-white" placeholder="CRA 94A 2 41">
+                        </div>
+                        <div>
+                            <label class="label-premium text-indigo-600 italic">Nombre de Usuario (Login ID)</label>
+                            <div class="relative">
+                                <i data-lucide="fingerprint" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-300"></i>
+                                <input type="text" id="m-user" value="${isEdit ? user.username : ''}" class="input-premium pl-12 bg-white ${isEdit ? 'opacity-60 cursor-not-allowed font-bold' : ''}" required ${isEdit ? 'readonly' : ''}>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="label-premium">Rol Institucional</label>
+                            <select id="m-rol" class="input-premium bg-white">
+                                <option value="estudiante" ${user?.rol === 'estudiante' ? 'selected' : ''}>Estudiante</option>
+                                <option value="docente" ${user?.rol === 'docente' ? 'selected' : ''}>Docente</option>
+                                <option value="admin" ${user?.rol === 'admin' ? 'selected' : ''}>Admin TI</option>
+                                <option value="registro" ${user?.rol === 'registro' ? 'selected' : ''}>Registro Académico</option>
+                                <option value="financiero" ${user?.rol === 'financiero' ? 'selected' : ''}>Gestión Financiera</option>
+                                <option value="director" ${user?.rol === 'director' ? 'selected' : ''}>Director / Decano</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 4: CONTACTOS DE EMERGENCIA -->
+                <div class="space-y-8 border-t border-slate-100 pt-10">
+                    <div class="flex items-center gap-4">
+                        <div class="h-8 w-1.5 bg-red-500 rounded-full"></div>
+                        <h3 class="text-xs font-black uppercase tracking-[0.3em] text-[#032840]">Contactos de Emergencia</h3>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        <!-- Contacto 1 -->
+                        <div class="p-8 border-2 border-dashed border-slate-100 rounded-[2.5rem] space-y-6 hover:border-red-100 transition-colors bg-white">
+                            <div class="flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center font-black text-xs">1</span>
+                                <span class="text-xs font-black text-slate-500 uppercase">Contacto Primario</span>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="label-premium opacity-60">Nombre Completo</label>
+                                    <input type="text" id="m-emer-1-nombre" value="${metadata.emergencia?.[0]?.nombre || ''}" class="input-premium py-2 text-sm" placeholder="JANETH ORTIZ">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="label-premium opacity-60">Parentesco</label>
+                                        <input type="text" id="m-emer-1-rel" value="${metadata.emergencia?.[0]?.parentesco || ''}" class="input-premium py-2 text-sm" placeholder="Acudiente">
+                                    </div>
+                                    <div>
+                                        <label class="label-premium opacity-60">Teléfono</label>
+                                        <input type="text" id="m-emer-1-tel" value="${metadata.emergencia?.[0]?.telefono || ''}" class="input-premium py-2 text-sm" placeholder="317 4169964">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="label-premium opacity-60">Dirección</label>
+                                    <input type="text" id="m-emer-1-dir" value="${metadata.emergencia?.[0]?.direccion || ''}" class="input-premium py-2 text-sm" placeholder="CRA 94A 2 41...">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contacto 2 -->
+                        <div class="p-8 border-2 border-dashed border-slate-100 rounded-[2.5rem] space-y-6 hover:border-red-100 transition-colors bg-white">
+                            <div class="flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center font-black text-xs">2</span>
+                                <span class="text-xs font-black text-slate-500 uppercase">Contacto Secundario</span>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="label-premium opacity-60">Nombre Completo</label>
+                                    <input type="text" id="m-emer-2-nombre" value="${metadata.emergencia?.[1]?.nombre || ''}" class="input-premium py-2 text-sm" placeholder="DEYSON FERNANDO ESPINOSA">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="label-premium opacity-60">Parentesco</label>
+                                        <input type="text" id="m-emer-2-rel" value="${metadata.emergencia?.[1]?.parentesco || ''}" class="input-premium py-2 text-sm" placeholder="Acudiente">
+                                    </div>
+                                    <div>
+                                        <label class="label-premium opacity-60">Teléfono</label>
+                                        <input type="text" id="m-emer-2-tel" value="${metadata.emergencia?.[1]?.telefono || ''}" class="input-premium py-2 text-sm" placeholder="311 7246085">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="label-premium opacity-60">Dirección</label>
+                                    <input type="text" id="m-emer-2-dir" value="${metadata.emergencia?.[1]?.direccion || ''}" class="input-premium py-2 text-sm" placeholder="Cali, Valle 76001">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 5: OTROS DETALLES -->
+                <div class="space-y-8 border-t border-slate-100 pt-10">
+                    <div class="flex items-center gap-4">
+                        <div class="h-8 w-1.5 bg-slate-400 rounded-full"></div>
+                        <h3 class="text-xs font-black uppercase tracking-[0.3em] text-[#032840]">Información Adicional</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="label-premium">Status de discapacidad</label>
+                            <input type="text" id="m-discapacidad" value="${metadata.discapacidad}" class="input-premium" placeholder="Status no disponible">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="sticky bottom-[-10px] bg-white/90 backdrop-blur-md pt-8 pb-4 border-t border-slate-100 flex justify-end gap-6 z-20">
+                    <button type="button" onclick="document.getElementById('modal-container').classList.add('hidden'); document.getElementById('modal-content').className='bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all';" 
+                        class="px-10 py-5 font-black uppercase tracking-widest text-[10px] text-slate-400 hover:text-slate-600 transition-all">Cerrar sin guardar</button>
+                    <button type="submit" class="btn-premium bg-[#032840] text-[#fab720] px-20 py-5 shadow-2xl shadow-indigo-100 hover:scale-[1.02] active:scale-95 transition-all">
+                        <span class="font-black uppercase tracking-widest text-xs">${isEdit ? 'Actualizar Expediente Global' : 'Confirmar Alta en el Sistema'}</span>
+                    </button>
                 </div>
             </form>
         </div>
         `;
 
+        // Update close button in header too
+        const closeBtn = modalContent.querySelector('button[onclick*="modal-container"]');
+        if (closeBtn) {
+            closeBtn.setAttribute('onclick', "document.getElementById('modal-container').classList.add('hidden'); document.getElementById('modal-content').className='bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all';");
+        }
+
         container.classList.remove('hidden');
         lucide.createIcons();
 
+        // Auto-populate email for new users
+        if (!isEdit) {
+            const userInput = document.getElementById('m-user');
+            const emailInput = document.getElementById('m-email');
+            userInput.addEventListener('input', (e) => {
+                const user = e.target.value.trim().toLowerCase();
+                emailInput.value = user ? `${user}@unicatolica.edu.co` : '';
+            });
+        }
+
         document.getElementById('user-form').onsubmit = async (e) => {
             e.preventDefault();
+
+            // Reconstruct full metadata object
+            const metadataObj = {
+                segundo_nombre: document.getElementById('m-segundo-nombre').value,
+                estado_civil: document.getElementById('m-estado-civil').value,
+                sexo: document.getElementById('m-sexo').value,
+                nombre_preferido: document.getElementById('m-preferido').value,
+                identificacion_genero: document.getElementById('m-genero-id').value,
+                email_personal: document.getElementById('m-email-personal').value,
+                direccion: document.getElementById('m-direccion').value,
+                discapacidad: document.getElementById('m-discapacidad').value,
+                emergencia: [
+                    {
+                        nombre: document.getElementById('m-emer-1-nombre').value,
+                        parentesco: document.getElementById('m-emer-1-rel').value,
+                        telefono: document.getElementById('m-emer-1-tel').value,
+                        direccion: document.getElementById('m-emer-1-dir').value
+                    },
+                    {
+                        nombre: document.getElementById('m-emer-2-nombre').value,
+                        parentesco: document.getElementById('m-emer-2-rel').value,
+                        telefono: document.getElementById('m-emer-2-tel').value,
+                        direccion: document.getElementById('m-emer-2-dir').value
+                    }
+                ]
+            };
+
             const payload = {
                 nombres: document.getElementById('m-nombres').value,
                 apellidos: document.getElementById('m-apellidos').value,
                 email: document.getElementById('m-email').value,
                 rol: document.getElementById('m-rol').value,
                 documento: document.getElementById('m-doc').value,
+                tipo_documento: document.getElementById('m-tipo-doc').value,
+                telefono: document.getElementById('m-telefono').value,
+                fecha_nacimiento: document.getElementById('m-nacimiento-text').value,
+                metadata: metadataObj,
+                activo: document.getElementById('m-activo').checked
             };
 
             if (!isEdit) {
                 payload.username = document.getElementById('m-user').value;
-                payload.password = document.getElementById('m-pass').value;
-            } else {
-                payload.activo = document.getElementById('m-activo').checked;
+                payload.password = prompt("Asigna una contraseña inicial para el nuevo usuario:", "Academia2024!");
+                if (!payload.password) return;
             }
 
             try {
                 if (isEdit) {
                     await API.put(`/admin/users/${user.id}`, payload);
-                    Toast.success('Usuario actualizado');
+                    Toast.success('Ficha global actualizada correctamente');
                 } else {
                     await API.post('/admin/users', payload);
-                    Toast.success('Usuario creado');
+                    Toast.success('Nuevo integrante dado de alta en el sistema');
                 }
+                document.getElementById('modal-content').className = 'bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all';
                 container.classList.add('hidden');
                 this.refreshTable();
             } catch (err) {
