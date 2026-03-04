@@ -2,7 +2,7 @@
  * API Wrapper - Communication with Backend
  */
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'https://api.unicatolica.online//api';
 
 const API = {
     async request(endpoint, options = {}) {
