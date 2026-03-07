@@ -5,7 +5,12 @@
 const Auth = {
     async login(username, password) {
         try {
-            const result = await API.post('/auth/login', { username, password });
+            // Encriptar payload para que no sea visible en texto plano en la consola
+            const secret = 'banner-secret-key-2024'; // Debe coincidir con el backend
+            const payload = JSON.stringify({ username, password });
+            const encrypted = CryptoJS.AES.encrypt(payload, secret).toString();
+
+            const result = await API.post('/auth/login', { data: encrypted });
             if (result.token) {
                 sessionStorage.setItem('token', result.token);
                 sessionStorage.setItem('user', JSON.stringify(result.user));

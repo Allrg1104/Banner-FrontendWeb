@@ -21,10 +21,7 @@ Views.login = {
                         
                         <div class="relative z-10">
                             <div class="flex items-center gap-3 mb-10">
-                                <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                                    <i data-lucide="graduation-cap" class="text-[#032840] w-6 h-6"></i>
-                                </div>
-                                <span class="text-white text-2xl font-black tracking-tight" style="font-family: 'Outfit'">UNICA<span class="text-[#fab720]">TÓLICA</span></span>
+                                <img src="https://www.unicatolica.edu.co/wp-content/uploads/2021/03/logo-unicatolica.png" alt="Unicatólica Logo" class="h-16 w-auto brightness-0 invert">
                             </div>
                             
                             <h1 class="text-5xl font-extrabold text-white leading-tight mb-6">
@@ -58,8 +55,7 @@ Views.login = {
                     <!-- Right Side: Professional Login Form -->
                     <div class="flex-1 bg-white p-12 lg:p-20 flex flex-col justify-center">
                         <div class="mb-10 lg:hidden flex items-center gap-3">
-                             <i data-lucide="graduation-cap" class="text-[#032840] w-8 h-8"></i>
-                             <span class="text-[#032840] text-2xl font-bold">UNICATÓLICA</span>
+                             <img src="https://www.unicatolica.edu.co/wp-content/uploads/2021/03/logo-unicatolica.png" alt="Unicatólica Logo" class="h-12 w-auto">
                         </div>
 
                         <div class="mb-10">
@@ -102,55 +98,7 @@ Views.login = {
                             </button>
                         </form>
 
-                        <!-- Demo Accounts Grid -->
-                        <div class="mt-12">
-                            <div class="relative mb-8">
-                                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
-                                <div class="relative flex justify-center text-xs uppercase tracking-widest font-bold"><span class="bg-white px-4 text-slate-400">Acceso Rápido (Demo)</span></div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <button onclick="Views.login.fillDemo('santiago.espinosa01', 'Temp2024!')" class="flex items-center p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-md hover:border-indigo-100 transition-all text-left">
-                                    <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mr-3">
-                                        <i data-lucide="graduation-cap" class="w-4 h-4"></i>
-                                    </div>
-                                    <div>
-                                        <div class="text-xs font-bold text-slate-900">Estudiante</div>
-                                        <div class="text-[10px] text-slate-500">Santiago Espinosa</div>
-                                    </div>
-                                </button>
-                                
-                                <button onclick="Views.login.fillDemo('admin.ti', 'Admin2024!')" class="flex items-center p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-md hover:border-indigo-100 transition-all text-left">
-                                    <div class="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center mr-3">
-                                        <i data-lucide="shield-check" class="w-4 h-4"></i>
-                                    </div>
-                                    <div>
-                                        <div class="text-xs font-bold text-slate-900">Admin TI</div>
-                                        <div class="text-[10px] text-slate-500">Soporte TI</div>
-                                    </div>
-                                </button>
-                                
-                                <button onclick="Views.login.fillDemo('andrea.sanchez', 'Docente2024!')" class="flex items-center p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-md hover:border-indigo-100 transition-all text-left">
-                                    <div class="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center mr-3">
-                                        <i data-lucide="presentation" class="w-4 h-4"></i>
-                                    </div>
-                                    <div>
-                                        <div class="text-xs font-bold text-slate-900">Docente</div>
-                                        <div class="text-[10px] text-slate-500">Dra. Andrea S.</div>
-                                    </div>
-                                </button>
-
-                                <button onclick="Views.login.fillDemo('luis.pedraza', 'Financiero2024!')" class="flex items-center p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-md hover:border-indigo-100 transition-all text-left">
-                                    <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center mr-3">
-                                        <i data-lucide="wallet" class="w-4 h-4"></i>
-                                    </div>
-                                    <div>
-                                        <div class="text-xs font-bold text-slate-900">Financiero</div>
-                                        <div class="text-[10px] text-slate-500">Dr. Luis Pedraza</div>
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -214,11 +162,5 @@ Views.login = {
                 container.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg)`;
             });
         }
-    },
-
-    fillDemo(user, pass) {
-        document.getElementById('username').value = user;
-        document.getElementById('password').value = pass;
-        Toast.info('Credenciales de demo cargadas');
     }
 };
