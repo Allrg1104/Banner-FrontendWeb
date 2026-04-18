@@ -21,7 +21,7 @@ Views.login = {
                         
                         <div class="relative z-10">
                             <div class="flex items-center gap-3 mb-10">
-                                <img src="https://www.unicatolica.edu.co/wp-content/uploads/2021/03/logo-unicatolica.png" alt="Unicatólica Logo" class="h-16 w-auto brightness-0 invert">
+                                <img src="https://www.unicatolica.edu.co/files/unicatolica-svg.svg" alt="Unicatólica Logo" class="h-16 w-auto brightness-0 invert">
                             </div>
                             
                             <h1 class="text-5xl font-extrabold text-white leading-tight mb-6">
@@ -36,18 +36,8 @@ Views.login = {
                         
                         <div class="relative z-10">
                             <div class="flex gap-8 mb-4">
-                                <div>
-                                    <div class="text-3xl font-bold text-white">98%</div>
-                                    <div class="text-xs text-slate-500 uppercase tracking-widest font-bold">Retención</div>
-                                </div>
-                                <div>
-                                    <div class="text-3xl font-bold text-white">12k+</div>
-                                    <div class="text-xs text-slate-500 uppercase tracking-widest font-bold">Estudiantes</div>
-                                </div>
-                                <div>
-                                    <div class="text-3xl font-bold text-white">AI</div>
-                                    <div class="text-xs text-slate-500 uppercase tracking-widest font-bold">Powered</div>
-                                </div>
+                                
+                                
                             </div>
                         </div>
                     </div>
