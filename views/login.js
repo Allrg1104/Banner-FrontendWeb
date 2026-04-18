@@ -67,7 +67,7 @@ Views.login = {
                             <div class="input-group">
                                 <div class="flex justify-between items-center mb-2">
                                     <label class="label-premium mb-0">Contraseña</label>
-                                    <a href="#" class="text-xs font-bold text-[#032840] hover:text-[#021a2b] transition-colors">¿Olvidaste tu contraseña?</a>
+                                    <a href="#" id="forgot-password" class="text-xs font-bold text-[#032840] hover:text-[#021a2b] transition-colors">¿Olvidaste tu contraseña?</a>
                                 </div>
                                 <div class="relative">
                                     <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
@@ -129,6 +129,24 @@ Views.login = {
                     btn.disabled = false;
                     btn.innerHTML = originalContent;
                 }
+            }
+        });
+
+        //ACCIÓN PARA OLVIDÉ MI CONTRASEÑA
+        const forgotBtn = document.getElementById('forgot-password');
+
+        forgotBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            const email = prompt('Ingresa tu correo institucional');
+
+            if (!email) return;
+
+            try {
+                await API.post('/auth/request-password-change', { email });
+                Toast.success('Revisa tu correo para continuar');
+            } catch (err) {
+                Toast.error(err.message || 'Error al solicitar recuperación');
             }
         });
 
