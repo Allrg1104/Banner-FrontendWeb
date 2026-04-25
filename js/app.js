@@ -3,8 +3,7 @@
  * Enterprise grade navigation and layout architecture
  */
 
-// Global Views Container
-window.Views = {};
+<script type="module" src="/js/app.js"></script>
 
 const Layout = {
     /**
