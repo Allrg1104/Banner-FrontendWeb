@@ -135,21 +135,28 @@ Views.login = {
         //ACCIÓN PARA OLVIDÉ MI CONTRASEÑA
         const forgotBtn = document.getElementById('forgot-password');
 
-        forgotBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
+forgotBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
 
-            const email = prompt('Ingresa tu correo institucional');
+    const usernameInput = document.getElementById('username').value;
 
-            if (!email) return;
+    // Si ya escribió algo, lo usamos
+    let email = usernameInput;
 
-            try {
-                await API.post('/auth/request-password-change', { email });
-                Toast.success('Revisa tu correo para continuar');
-            } catch (err) {
-                Toast.error(err.message || 'Error al solicitar recuperación');
-            }
-        });
+    // Si no parece correo, pedirlo
+    if (!email || !email.includes('@')) {
+        email = window.prompt('Ingresa tu correo institucional');
+    }
 
+    if (!email) return;
+
+    try {
+        await API.post('/auth/forgot-password', { email });
+        Toast.success('Si el correo existe, revisa tu bandeja');
+    } catch (err) {
+        Toast.error('Error al procesar la solicitud');
+    }
+});
         // Add mouse movement effect to visual side
         const container = document.querySelector('.glass');
         if (container) {
