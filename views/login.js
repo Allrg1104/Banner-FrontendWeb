@@ -3,7 +3,7 @@
  * Immersive split-screen with high-end interactions
  */
 
-Views.login = {
+window.Views.login = {
     async render() {
         return `
             <div class="premium-bg"></div>
@@ -73,7 +73,7 @@ Views.login = {
                                     <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                                         <i data-lucide="lock" class="w-5 h-5"></i>
                                     </span>
-                                    <input type="password" id="password" class="input-premium pl-12" placeholder="••••••••" required>
+                                    <input type="password" id="clv_acceso" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" class="input-premium pl-12" placeholder="••••••••" required>
                                 </div>
                             </div>
 
@@ -106,7 +106,7 @@ Views.login = {
             btn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Autenticando...';
 
             const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
+            const pass = document.getElementById('clv_acceso').value;
 
             try {
                 const response = await Auth.login(user, pass);
@@ -132,31 +132,110 @@ Views.login = {
             }
         });
 
-        //ACCIÓN PARA OLVIDÉ MI CONTRASEÑA
+        // ACCIÓN PARA OLVIDÉ MI CONTRASEÑA
         const forgotBtn = document.getElementById('forgot-password');
 
-forgotBtn.addEventListener('click', async (e) => {
-    e.preventDefault();
+        forgotBtn.addEventListener('click', (e) => {
+            e.preventDefault();
 
-    const usernameInput = document.getElementById('username').value;
+            const usernameInput = document.getElementById('username').value;
+            const modalContainer = document.getElementById('modal-container');
+            const modalContent = document.getElementById('modal-content');
 
-    // Si ya escribió algo, lo usamos
-    let email = usernameInput;
+            let initialEmail = '';
+            if (usernameInput && usernameInput.includes('@')) {
+                initialEmail = usernameInput;
+            } else if (usernameInput) {
+                initialEmail = usernameInput + '@unicatolica.edu.co';
+            }
 
-    // Si no parece correo, pedirlo
-    if (!email || !email.includes('@')) {
-        email = window.prompt('Ingresa tu correo institucional');
-    }
+            modalContent.innerHTML = `
+                <div class="p-8 animate-fade-in relative">
+                    <!-- Decoración Superior -->
+                    <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#032840] to-[#fab720]"></div>
+                    
+                    <div class="flex items-center gap-4 mb-6 mt-2">
+                        <div class="w-14 h-14 bg-slate-50 text-[#032840] rounded-2xl flex items-center justify-center shadow-sm border border-slate-100">
+                            <i data-lucide="mail-search" class="w-7 h-7"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-extrabold text-slate-800 tracking-tight">Recuperar Acceso</h3>
+                            <p class="text-slate-500 text-sm font-medium mt-1">Recibe un enlace seguro en tu correo</p>
+                        </div>
+                    </div>
+                    
+                    <form id="forgot-password-form" class="space-y-6">
+                        <div class="input-group">
+                            <label class="label-premium block mb-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Correo Institucional</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                                    <i data-lucide="mail" class="w-5 h-5"></i>
+                                </span>
+                                <input type="email" id="recovery-email" class="input-premium pl-12 w-full border-2 border-slate-100 rounded-xl py-3.5 focus:border-[#032840] focus:ring-0 transition-all outline-none text-slate-700 bg-slate-50/50 focus:bg-white" placeholder="ej: usuario@unicatolica.edu.co" value="${initialEmail}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-4 mt-8 pt-6 border-t border-slate-100">
+                            <button type="button" id="btn-cancel-recovery" class="flex-1 py-3.5 text-slate-500 font-bold hover:bg-slate-50 hover:text-slate-800 rounded-xl transition-all duration-300">
+                                Cancelar
+                            </button>
+                            <button type="submit" id="btn-send-recovery" class="flex-1 btn-premium py-3.5 bg-[#032840] hover:bg-[#021a2b] text-white rounded-xl shadow-lg shadow-[#032840]/20 transition-all duration-300 flex justify-center items-center gap-2 font-bold group">
+                                Enviar Enlace
+                                <i data-lucide="send" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
 
-    if (!email) return;
+            // Renderizar los íconos de Lucide
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
 
-    try {
-        await API.post('/auth/forgot-password', { email });
-        Toast.success('Si el correo existe, revisa tu bandeja');
-    } catch (err) {
-        Toast.error('Error al procesar la solicitud');
-    }
-});
+            // Mostrar modal global
+            modalContainer.classList.remove('hidden');
+
+            // Lógica para cerrar modal
+            const closeModal = () => {
+                modalContainer.classList.add('hidden');
+                modalContent.innerHTML = '';
+            };
+
+            document.getElementById('btn-cancel-recovery').addEventListener('click', closeModal);
+
+            // Click fuera del contenido del modal para cerrar
+            modalContainer.addEventListener('click', (ev) => {
+                if (ev.target === modalContainer) closeModal();
+            });
+
+            // Submit del form
+            document.getElementById('forgot-password-form').addEventListener('submit', async (ev) => {
+                ev.preventDefault();
+
+                const btnSend = document.getElementById('btn-send-recovery');
+                const originalBtnContent = btnSend.innerHTML;
+                const emailToRecover = document.getElementById('recovery-email').value;
+
+                if (!emailToRecover) return;
+
+                btnSend.disabled = true;
+                btnSend.innerHTML = '<div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>';
+
+                try {
+                    await API.post('/auth/forgot-password', { email: emailToRecover });
+                    Toast.success('Si el correo existe, revisa tu bandeja.');
+                    closeModal();
+                } catch (err) {
+                    Toast.error('Error al procesar la solicitud.');
+                } finally {
+                    if (btnSend) {
+                        btnSend.disabled = false;
+                        btnSend.innerHTML = originalBtnContent;
+                    }
+                }
+            });
+        });
         // Add mouse movement effect to visual side
         const container = document.querySelector('.glass');
         if (container) {

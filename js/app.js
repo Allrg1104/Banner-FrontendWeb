@@ -2,8 +2,24 @@
  * Premium App Shell Redesign
  * Enterprise grade navigation and layout architecture
  */
+// Views container is initialized in index.html to prevent Module Hoisting conflicts
 
-<script type="module" src="/js/app.js"></script>
+import './api.js';
+import './auth.js';
+import './router.js';
+
+// Views
+import '../views/login.js';
+import '../views/student-dashboard.js';
+import '../views/profile.js';
+import '../views/student.js';
+import '../views/teacher.js';
+import '../views/director.js';
+import '../views/financial.js';
+import '../views/registro.js';
+import '../views/admin.js';
+import '../views/change-password.js';
+import '../views/reset-password.js';
 
 const Layout = {
     /**
@@ -135,6 +151,8 @@ const Layout = {
     }
 };
 
+window.Layout = Layout;
+
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
     Router.init({
@@ -148,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '/registro': 'registro',
         '/financial': 'financial',
         '/admin': 'admin',
-        '/change-password': 'change-password'
+        '/change-password': 'change-password',
+        '/reset-password': 'reset-password'
     });
 });

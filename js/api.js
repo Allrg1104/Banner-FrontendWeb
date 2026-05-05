@@ -2,7 +2,10 @@
  * API Wrapper - Communication with Backend
  */
 
-const API_BASE_URL = 'https://api.unicatolica.online/api';
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE_URL = isLocalhost
+    ? 'http://localhost:3000/api'
+    : 'https://api.unicatolica.online/api';
 
 const API = {
     async request(endpoint, options = {}) {
@@ -112,3 +115,6 @@ const Toast = {
     info(msg) { this.show(msg, 'info'); },
     warning(msg) { this.show(msg, 'warning'); }
 };
+
+window.API = API;
+window.Toast = Toast;

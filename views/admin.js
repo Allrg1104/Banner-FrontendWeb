@@ -353,7 +353,7 @@ Views.admin = {
                 </button>
             </div>
 
-            <form id="user-form" class="p-10 space-y-12 pb-24">
+            <form id="user-form" class="p-10 space-y-12 pb-24" autocomplete="off">
                 
                 <!-- SECCIÓN 1: DETALLES PERSONALES -->
                 <div class="space-y-8">

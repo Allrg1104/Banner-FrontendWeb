@@ -45,3 +45,5 @@ const Auth = {
         return !!this.getToken();
     }
 };
+
+window.Auth = Auth;

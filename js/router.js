@@ -13,7 +13,8 @@ const Router = {
     },
 
     async handleRoute() {
-        const path = window.location.hash.slice(1) || '/';
+        const fullPath = window.location.hash.slice(1) || '/';
+        const path = fullPath.split('?')[0];
 
         // Check Auth
         if (!Auth.isAuthenticated() && path !== '/login' && !path.startsWith('/reset-password')) {
@@ -76,3 +77,5 @@ const Router = {
         }
     }
 };
+
+window.Router = Router;

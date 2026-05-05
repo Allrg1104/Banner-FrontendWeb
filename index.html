@@ -46,22 +46,8 @@
     <div id="toast-container" class="fixed bottom-20 right-4 sm:bottom-4 sm:right-4 z-50 flex flex-col gap-2"></div>
 
     <!-- Core App Scripts -->
-    <script src="js/api.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/router.js"></script>
-    <script src="js/app.js"></script>
-
-    <!-- Views -->
-    <script src="views/login.js"></script>
-    <script src="views/student-dashboard.js"></script>
-    <script src="views/profile.js"></script>
-    <script src="views/student.js"></script>
-    <script src="views/teacher.js"></script>
-    <script src="views/director.js"></script>
-    <script src="views/financial.js"></script>
-    <script src="views/registro.js"></script>
-    <script src="views/admin.js"></script>
-    <script src="views/change-password.js"></script>
+    <script>window.Views = {};</script>
+    <script type="module" src="/js/app.js?v=2"></script>
 
     <!-- Pre-visualización (puedes borrar esto luego) -->
     <style>
