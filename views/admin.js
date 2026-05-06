@@ -377,7 +377,7 @@ Views.admin = {
                         </div>
                         <div>
                             <label class="label-premium">Fecha de nacimiento</label>
-                            <input type="text" id="m-nacimiento-text" value="${isEdit && user.fecha_nacimiento ? user.fecha_nacimiento : ''}" class="input-premium" placeholder="ej: 15 de agosto de 1995">
+                            <input type="date" id="m-nacimiento-text" value="${isEdit && user.fecha_nacimiento ? user.fecha_nacimiento : ''}" class="input-premium">
                         </div>
                         <div>
                             <label class="label-premium">Estado civil</label>
@@ -398,18 +398,6 @@ Views.admin = {
                         <div>
                             <label class="label-premium">Nombre preferido</label>
                             <input type="text" id="m-preferido" value="${metadata.nombre_preferido}" class="input-premium" placeholder="-">
-                        </div>
-                        <div>
-                            <label class="label-premium">Identificación de género</label>
-                            <input type="text" id="m-genero-id" value="${metadata.identificacion_genero}" class="input-premium" placeholder="Masculino">
-                        </div>
-                        <div>
-                            <label class="label-premium">Tipo Documento</label>
-                            <select id="m-tipo-doc" class="input-premium">
-                                <option value="CC" ${user?.tipo_documento === 'CC' ? 'selected' : ''}>CC</option>
-                                <option value="TI" ${user?.tipo_documento === 'TI' ? 'selected' : ''}>TI</option>
-                                <option value="CE" ${user?.tipo_documento === 'CE' ? 'selected' : ''}>CE</option>
-                            </select>
                         </div>
                     </div>
                 </div>
@@ -441,9 +429,19 @@ Views.admin = {
                                 <input type="text" id="m-telefono" value="${isEdit && user.telefono ? user.telefono : ''}" class="input-premium pl-12" placeholder="300 123 4567">
                             </div>
                         </div>
-                        <div>
-                            <label class="label-premium">Documento / Cédula</label>
-                            <input type="text" id="m-doc" value="${isEdit ? user.documento : ''}" class="input-premium" placeholder="1005234...">
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1">
+                                <label class="label-premium">Tipo Doc.</label>
+                                <select id="m-tipo-doc" class="input-premium">
+                                    <option value="CC" ${user?.tipo_documento === 'CC' ? 'selected' : ''}>CC</option>
+                                    <option value="TI" ${user?.tipo_documento === 'TI' ? 'selected' : ''}>TI</option>
+                                    <option value="CE" ${user?.tipo_documento === 'CE' ? 'selected' : ''}>CE</option>
+                                </select>
+                            </div>
+                            <div class="col-span-2">
+                                <label class="label-premium">Documento / Cédula</label>
+                                <input type="text" id="m-doc" value="${isEdit ? user.documento : ''}" class="input-premium" placeholder="1005234...">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -612,7 +610,6 @@ Views.admin = {
                 estado_civil: document.getElementById('m-estado-civil').value,
                 sexo: document.getElementById('m-sexo').value,
                 nombre_preferido: document.getElementById('m-preferido').value,
-                identificacion_genero: document.getElementById('m-genero-id').value,
                 email_personal: document.getElementById('m-email-personal').value,
                 direccion: document.getElementById('m-direccion').value,
                 discapacidad: document.getElementById('m-discapacidad').value,
