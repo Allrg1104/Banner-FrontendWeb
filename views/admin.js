@@ -426,9 +426,9 @@ Views.admin = {
                             <label class="label-premium text-indigo-600">Correo Institucional</label>
                             <div class="relative group">
                                 <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300"></i>
-                                <input type="email" id="m-email" value="${isEdit ? user.email : ''}" class="input-premium pl-12 ${isEdit ? 'bg-slate-50 cursor-not-allowed font-bold' : ''}" ${isEdit ? 'readonly' : ''} placeholder="usuario@unicatolica.edu.co">
+                                <input type="email" id="m-email" value="${isEdit ? user.email : ''}" class="input-premium pl-12" placeholder="usuario@unicatolica.edu.co">
                             </div>
-                            <p class="text-[9px] text-slate-400 mt-2 font-bold uppercase tracking-widest">${isEdit ? '(Solo lectura para perfiles existentes)' : '(Se generará automáticamente al escribir el usuario)'}</p>
+                            <p class="text-[9px] text-slate-400 mt-2 font-bold uppercase tracking-widest">${isEdit ? '(Puedes editar el correo institucional)' : '(Se generará automáticamente al escribir el usuario)'}</p>
                         </div>
                         <div>
                             <label class="label-premium">Correo Personal</label>
