@@ -6,15 +6,26 @@
 Views.student = {
     async render() {
         const user = Auth.getUser();
-        let studentData, riskData;
+        let studentData, riskData, periods, activityData;
+        
+        const selectedPeriodId = this.state?.periodId || '';
 
         try {
-            studentData = await API.get(`/students/${user.id}/dashboard`);
-            // We'll also fetch comprehensive risk info for each course
-            riskData = await API.get(`/risk/${user.id}`);
+            const [data, risk, per, act] = await Promise.all([
+                API.get(`/students/${user.id}/dashboard?periodoId=${selectedPeriodId}`),
+                API.get(`/risk/${user.id}`),
+                API.get('/students/periodos'),
+                API.get(`/students/${user.id}/activity`)
+            ]);
+            studentData = data;
+            riskData = risk;
+            periods = per;
+            activityData = act;
         } catch (e) {
             Toast.error('No se pudo cargar la información académica');
         }
+
+        const activePeriod = periods?.find(p => selectedPeriodId ? p.id == selectedPeriodId : p.activo === 1) || { nombre: 'Periodo Desconocido' };
 
         const riskColor = (score) => {
             if (score > 80) return 'text-red-600 bg-red-50 border-red-200';
@@ -35,23 +46,29 @@ Views.student = {
                 <div class="relative overflow-hidden rounded-[32px] bg-slate-900 p-8 lg:p-12 text-white shadow-2xl">
                     <div class="absolute top-0 right-0 w-[40%] h-full bg-gradient-to-l from-indigo-600/20 to-transparent"></div>
                     <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-                        <div>
-                            <div class="inline-flex items-center gap-2 bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 border border-indigo-400/20">
-                                <i data-lucide="award" class="w-3 h-3"></i> Periodo 2025-II Activo
+                        <div class="flex-1">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="inline-flex items-center gap-2 bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-400/20">
+                                    <i data-lucide="award" class="w-3 h-3"></i> Periodo ${activePeriod.nombre}
+                                </div>
+                                
+                                <select onchange="Views.student.changePeriod(this.value)" class="bg-slate-800 border-none text-[10px] font-black uppercase tracking-widest text-indigo-300 rounded-full px-4 py-1 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer">
+                                    ${periods?.map(p => `<option value="${p.id}" ${p.id == activePeriod.id ? 'selected' : ''}>${p.nombre} ${p.activo ? '(Activo)' : ''}</option>`).join('') || ''}
+                                </select>
                             </div>
                             <h2 class="text-4xl lg:text-5xl font-extrabold mb-4 tracking-tight">Hola, ${(user.nombres || 'Estudiante').split(' ')[0]} 👋</h2>
                             <p class="text-slate-400 text-lg max-w-xl">
-                                Tu rendimiento este semestre es <span class="text-indigo-400 font-bold">Sobresaliente</span>. 
+                                Tu rendimiento en ${studentData?.resumen?.programa || 'tu programa'} es <span class="text-indigo-400 font-bold">Sobresaliente</span>. 
                                 Has cumplido con el 92% de las actividades propuestas.
                             </p>
                         </div>
                         <div class="flex gap-4">
                             <div class="glass-dark p-6 rounded-3xl border-indigo-500/30 w-32 text-center">
-                                <div class="text-3xl font-black text-white">3.8</div>
+                                <div class="text-3xl font-black text-white">${studentData?.resumen?.promedio_acumulado?.toFixed(1) || '0.0'}</div>
                                 <div class="text-[10px] text-slate-400 uppercase tracking-widest">Promedio</div>
                             </div>
                             <div class="glass-dark p-6 rounded-3xl border-indigo-500/30 w-32 text-center">
-                                <div class="text-3xl font-black text-indigo-400">5°</div>
+                                <div class="text-3xl font-black text-indigo-400">${studentData?.resumen?.semestre_actual || '1'}°</div>
                                 <div class="text-[10px] text-slate-400 uppercase tracking-widest">Semestre</div>
                             </div>
                         </div>
@@ -72,7 +89,11 @@ Views.student = {
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${(studentData?.matriculas || []).map(m => `
+                        ${(studentData?.matriculas || []).length === 0 ? `
+                            <div class="col-span-full py-20 text-center bg-slate-50 rounded-[32px] border-2 border-dashed border-slate-200">
+                                <p class="text-slate-400 font-bold italic">No hay materias registradas para este periodo.</p>
+                            </div>
+                        ` : (studentData?.matriculas || []).map(m => `
                             <div class="group card-premium ${riskGlow(m.risk?.score || 10)} bg-white">
                                 <div class="flex justify-between items-start mb-6">
                                     <div class="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
@@ -152,21 +173,15 @@ Views.student = {
                                     </tr>
                                 </thead>
                                 <tbody class="text-sm">
-                                    <tr class="group hover:bg-slate-50 transition-colors">
-                                        <td class="py-4 font-bold text-slate-700">Calificación: Parcial 2 - Cálculo</td>
-                                        <td class="py-4 text-center text-slate-400">Hoy, 10:30 AM</td>
-                                        <td class="py-4 text-right font-black text-indigo-600">4.1 / 5.0</td>
-                                    </tr>
-                                    <tr class="group hover:bg-slate-50 transition-colors">
-                                        <td class="py-4 font-bold text-slate-700">Asistencia: Fundamentos Prog</td>
-                                        <td class="py-4 text-center text-slate-400">Ayer, 08:00 AM</td>
-                                        <td class="py-4 text-right"><span class="badge badge-success">Presente</span></td>
-                                    </tr>
-                                    <tr class="group hover:bg-slate-50 transition-colors">
-                                        <td class="py-4 font-bold text-slate-700">Solicitud: Certificado Notas</td>
-                                        <td class="py-4 text-center text-slate-400">24 Feb, 2026</td>
-                                        <td class="py-4 text-right"><span class="badge badge-warning">Procesando</span></td>
-                                    </tr>
+                                    ${(activityData || []).length === 0 ? `
+                                        <tr><td colspan="3" class="py-8 text-center text-slate-400 italic">No hay actividad reciente registrada.</td></tr>
+                                    ` : activityData.map(a => `
+                                        <tr class="group hover:bg-slate-50 transition-colors">
+                                            <td class="py-4 font-bold text-slate-700">${a.actividad}</td>
+                                            <td class="py-4 text-center text-slate-400">${new Date(a.fecha).toLocaleDateString()}</td>
+                                            <td class="py-4 text-right font-black ${a.tipo === 'grade' ? 'text-indigo-600' : 'text-emerald-600'}">${a.resultado}</td>
+                                        </tr>
+                                    `).join('')}
                                 </tbody>
                             </table>
                         </div>
@@ -174,6 +189,13 @@ Views.student = {
                 </div>
             </div>
         `;
+    },
+
+    state: { periodId: null },
+
+    async changePeriod(id) {
+        this.state.periodId = id;
+        await Router.refresh();
     },
 
     afterRender() {

@@ -34,6 +34,10 @@ const Router = {
         window.location.hash = path;
     },
 
+    async refresh() {
+        await this.handleRoute();
+    },
+
     redirectToDashboard() {
         const user = Auth.getUser();
         if (!user) return this.navigate('/login');
