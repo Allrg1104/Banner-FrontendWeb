@@ -309,18 +309,18 @@ Views.admin = {
 
         // Parse metadata with defaults matching the user's required list
         let metadata = {
-            segundo_nombre: '-',
+            segundo_nombre: '',
             estado_civil: 'Soltero(a)',
             sexo: 'Masculino',
-            nombre_preferido: '-',
-            identificacion_genero: 'Masculino',
+            nombre_preferido: '',
+            identificacion_genero: '',
             email_personal: '',
-            direccion: 'CRA 94A 2 41',
+            direccion: '',
             emergencia: [
-                { nombre: 'JANETH ORTIZ', parentesco: 'Acudiente', telefono: '317 4169964', direccion: 'CRA 94A 2 41, Cali, Valle 76001' },
-                { nombre: 'DEYSON FERNANDO ESPINOSA', parentesco: 'Acudiente', telefono: '311 7246085', direccion: 'Cali, Valle 76001' }
+                { nombre: '', parentesco: '', telefono: '', direccion: '' },
+                { nombre: '', parentesco: '', telefono: '', direccion: '' }
             ],
-            discapacidad: 'Status no disponible'
+            discapacidad: ''
         };
 
         if (isEdit && user.metadata) {
@@ -365,7 +365,7 @@ Views.admin = {
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div>
                             <label class="label-premium">Nombre</label>
-                            <input type="text" id="m-nombres" value="${isEdit ? user.nombres : ''}" class="input-premium" required placeholder="Santiago">
+                            <input type="text" id="m-nombres" value="${isEdit ? user.nombres : ''}" class="input-premium" required placeholder="Juan">
                         </div>
                         <div>
                             <label class="label-premium">Segundo nombre</label>
@@ -373,11 +373,11 @@ Views.admin = {
                         </div>
                         <div>
                             <label class="label-premium">Apellido</label>
-                            <input type="text" id="m-apellidos" value="${isEdit ? user.apellidos : ''}" class="input-premium" required placeholder="Espinosa Ruiz">
+                            <input type="text" id="m-apellidos" value="${isEdit ? user.apellidos : ''}" class="input-premium" required placeholder="Pérez López">
                         </div>
                         <div>
                             <label class="label-premium">Fecha de nacimiento</label>
-                            <input type="text" id="m-nacimiento-text" value="${isEdit && user.fecha_nacimiento ? user.fecha_nacimiento : '7 de mayo de 2004'}" class="input-premium" placeholder="ej: 7 de mayo de 2004">
+                            <input type="text" id="m-nacimiento-text" value="${isEdit && user.fecha_nacimiento ? user.fecha_nacimiento : ''}" class="input-premium" placeholder="ej: 15 de agosto de 1995">
                         </div>
                         <div>
                             <label class="label-premium">Estado civil</label>
@@ -432,13 +432,13 @@ Views.admin = {
                         </div>
                         <div>
                             <label class="label-premium">Correo Personal</label>
-                            <input type="email" id="m-email-personal" value="${metadata.email_personal || 'santiago_espinosa10@hotmail.com'}" class="input-premium" placeholder="ejemplo@correo.com">
+                            <input type="email" id="m-email-personal" value="${metadata.email_personal || ''}" class="input-premium" placeholder="ejemplo@correo.com">
                         </div>
                         <div>
                             <label class="label-premium">Celular (Principal)</label>
                             <div class="relative">
                                 <i data-lucide="phone" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300"></i>
-                                <input type="text" id="m-telefono" value="${isEdit && user.telefono ? user.telefono : '3012117114'}" class="input-premium pl-12" placeholder="301...">
+                                <input type="text" id="m-telefono" value="${isEdit && user.telefono ? user.telefono : ''}" class="input-premium pl-12" placeholder="300 123 4567">
                             </div>
                         </div>
                         <div>
@@ -469,7 +469,7 @@ Views.admin = {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div class="col-span-2">
                             <label class="label-premium">Dirección de Residencia</label>
-                            <input type="text" id="m-direccion" value="${metadata.direccion}" class="input-premium bg-white" placeholder="CRA 94A 2 41">
+                            <input type="text" id="m-direccion" value="${metadata.direccion || ''}" class="input-premium bg-white" placeholder="Calle 123 #45-67">
                         </div>
                         <div>
                             <label class="label-premium text-indigo-600 italic">Nombre de Usuario (Login ID)</label>
@@ -509,7 +509,7 @@ Views.admin = {
                             <div class="space-y-4">
                                 <div>
                                     <label class="label-premium opacity-60">Nombre Completo</label>
-                                    <input type="text" id="m-emer-1-nombre" value="${metadata.emergencia?.[0]?.nombre || ''}" class="input-premium py-2 text-sm" placeholder="JANETH ORTIZ">
+                                    <input type="text" id="m-emer-1-nombre" value="${metadata.emergencia?.[0]?.nombre || ''}" class="input-premium py-2 text-sm" placeholder="Pepito Pérez">
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
@@ -518,12 +518,12 @@ Views.admin = {
                                     </div>
                                     <div>
                                         <label class="label-premium opacity-60">Teléfono</label>
-                                        <input type="text" id="m-emer-1-tel" value="${metadata.emergencia?.[0]?.telefono || ''}" class="input-premium py-2 text-sm" placeholder="317 4169964">
+                                        <input type="text" id="m-emer-1-tel" value="${metadata.emergencia?.[0]?.telefono || ''}" class="input-premium py-2 text-sm" placeholder="300 000 0000">
                                     </div>
                                 </div>
                                 <div>
                                     <label class="label-premium opacity-60">Dirección</label>
-                                    <input type="text" id="m-emer-1-dir" value="${metadata.emergencia?.[0]?.direccion || ''}" class="input-premium py-2 text-sm" placeholder="CRA 94A 2 41...">
+                                    <input type="text" id="m-emer-1-dir" value="${metadata.emergencia?.[0]?.direccion || ''}" class="input-premium py-2 text-sm" placeholder="Dirección del contacto...">
                                 </div>
                             </div>
                         </div>
@@ -537,7 +537,7 @@ Views.admin = {
                             <div class="space-y-4">
                                 <div>
                                     <label class="label-premium opacity-60">Nombre Completo</label>
-                                    <input type="text" id="m-emer-2-nombre" value="${metadata.emergencia?.[1]?.nombre || ''}" class="input-premium py-2 text-sm" placeholder="DEYSON FERNANDO ESPINOSA">
+                                    <input type="text" id="m-emer-2-nombre" value="${metadata.emergencia?.[1]?.nombre || ''}" class="input-premium py-2 text-sm" placeholder="María López">
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
@@ -546,12 +546,12 @@ Views.admin = {
                                     </div>
                                     <div>
                                         <label class="label-premium opacity-60">Teléfono</label>
-                                        <input type="text" id="m-emer-2-tel" value="${metadata.emergencia?.[1]?.telefono || ''}" class="input-premium py-2 text-sm" placeholder="311 7246085">
+                                        <input type="text" id="m-emer-2-tel" value="${metadata.emergencia?.[1]?.telefono || ''}" class="input-premium py-2 text-sm" placeholder="300 000 0000">
                                     </div>
                                 </div>
                                 <div>
                                     <label class="label-premium opacity-60">Dirección</label>
-                                    <input type="text" id="m-emer-2-dir" value="${metadata.emergencia?.[1]?.direccion || ''}" class="input-premium py-2 text-sm" placeholder="Cali, Valle 76001">
+                                    <input type="text" id="m-emer-2-dir" value="${metadata.emergencia?.[1]?.direccion || ''}" class="input-premium py-2 text-sm" placeholder="Dirección del contacto...">
                                 </div>
                             </div>
                         </div>
