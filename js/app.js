@@ -4,9 +4,9 @@
  */
 // Views container is initialized in index.html to prevent Module Hoisting conflicts
 
-import './api.js';
-import './auth.js';
-import './router.js';
+import './api.js?v=3';
+import './auth.js?v=3';
+import './router.js?v=3';
 
 // Views
 import '../views/login.js';
