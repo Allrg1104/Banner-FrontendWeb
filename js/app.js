@@ -10,7 +10,7 @@ import './router.js?v=16';
 
 // Views
 import '../views/login.js';
-import '../views/student-dashboard.js';
+import '../views/student-dashboard-v17.js';
 import '../views/profile.js';
 import '../views/student.js';
 import '../views/teacher.js';
