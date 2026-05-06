@@ -4,9 +4,9 @@
  */
 // Views container is initialized in index.html to prevent Module Hoisting conflicts
 
-import './api.js?v=15';
-import './auth.js?v=15';
-import './router.js?v=15';
+import './api.js?v=16';
+import './auth.js?v=16';
+import './router.js?v=16';
 
 // Views
 import '../views/login.js';
@@ -17,7 +17,7 @@ import '../views/teacher.js';
 import '../views/director.js';
 import '../views/financial.js';
 import '../views/registro.js';
-import '../views/admin.js?v=15';
+import '../views/admin.js?v=16';
 import '../views/change-password.js';
 import '../views/reset-password.js';
 
