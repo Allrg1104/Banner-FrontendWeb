@@ -63,7 +63,7 @@ const Router = {
         try {
             const content = await view.render();
 
-            if (viewName === 'login' || viewName === 'change-password') {
+            if (viewName === 'login' || viewName === 'change-password' || viewName === 'reset-password') {
                 app.innerHTML = content;
             } else {
                 app.innerHTML = Layout.shell(content);
