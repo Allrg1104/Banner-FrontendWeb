@@ -17,7 +17,8 @@ import '../views/teacher.js';
 import '../views/director.js';
 import '../views/financial.js';
 import '../views/registro.js';
-import '../views/admin.js?v=16';
+import '../views/requests.js';
+import '../views/admin.js?v=18';
 import '../views/change-password.js';
 import '../views/reset-password.js';
 
@@ -55,6 +56,7 @@ const Layout = {
                         
                         <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-8 mb-4 px-4">Operaciones</div>
                         ${user.rol === 'estudiante' ? this.navItem('/profile', 'user-circle', 'Mi Perfil') : ''}
+                        ${user.rol === 'estudiante' ? this.navItem('/requests', 'clipboard-list', 'Mis Solicitudes') : ''}
                         ${this.navItem('/change-password', 'key-round', 'Seguridad')}
                     </nav>
 
@@ -130,6 +132,7 @@ const Layout = {
             '#/registro': 'Registro Académico',
             '#/financial': 'Módulo Financiero',
             '#/admin': 'Admin Usuarios',
+            '#/requests': 'Gestión de Solicitudes',
             '#/change-password': 'Seguridad'
         };
         return routes[hash] || 'Plataforma';
@@ -164,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '/teacher': 'teacher',
         '/director': 'director',
         '/registro': 'registro',
+        '/requests': 'requests',
         '/financial': 'financial',
         '/admin': 'admin',
         '/change-password': 'change-password',
