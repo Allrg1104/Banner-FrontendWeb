@@ -148,6 +148,9 @@ Views['requests'] = {
                 'rechazada': 'bg-rose-100 text-rose-700'
             };
 
+            const isCertificate = req.tipo.toLowerCase().includes('certificado');
+            const isApproved = req.estado === 'aprobada';
+
             return `
                 <tr class="hover:bg-slate-50/50 transition-colors">
                     <td class="px-6 py-4">
@@ -159,9 +162,17 @@ Views['requests'] = {
                         <div class="text-xs text-slate-500 truncate max-w-[200px]">${req.descripcion || 'Sin descripción adicional'}</div>
                     </td>
                     <td class="px-6 py-4">
-                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${statusColors[req.estado] || 'bg-slate-100'}">
-                            ${req.estado.replace('_', ' ')}
-                        </span>
+                        <div class="flex flex-col gap-2">
+                            <span class="w-fit px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${statusColors[req.estado] || 'bg-slate-100'}">
+                                ${req.estado.replace('_', ' ')}
+                            </span>
+                            ${isCertificate && isApproved ? `
+                                <button onclick="Views.requests.downloadCertificate('${req.id}', '${req.tipo}')" class="flex items-center gap-1 text-indigo-600 font-bold text-[10px] hover:text-indigo-800 transition-colors">
+                                    <i data-lucide="download" class="w-3 h-3"></i>
+                                    DESCARGAR PDF
+                                </button>
+                            ` : ''}
+                        </div>
                     </td>
                     <td class="px-6 py-4">
                         <div class="text-xs text-slate-600 italic font-medium">
@@ -171,6 +182,79 @@ Views['requests'] = {
                 </tr>
             `;
         }).join('');
+    },
+
+    downloadCertificate(id, type) {
+        const user = Auth.getUser();
+        const date = new Date().toLocaleDateString();
+        const verificationCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+        const certificateHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Certificado Académico - ${user.nombres}</title>
+                <style>
+                    body { font-family: 'Arial', sans-serif; padding: 50px; color: #333; line-height: 1.6; }
+                    .header { text-align: center; border-bottom: 3px solid #032840; padding-bottom: 20px; margin-bottom: 40px; }
+                    .logo-text { font-size: 28px; font-weight: 900; color: #032840; }
+                    .logo-accent { color: #fab720; }
+                    .title { text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 50px; text-transform: uppercase; }
+                    .content { font-size: 16px; text-align: justify; margin-bottom: 60px; }
+                    .highlight { font-weight: bold; }
+                    .footer { margin-top: 100px; text-align: center; }
+                    .signature { border-top: 1px solid #333; width: 250px; margin: 0 auto; padding-top: 10px; font-weight: bold; }
+                    .verification { margin-top: 50px; font-size: 10px; color: #666; text-align: center; border: 1px dashed #ccc; padding: 10px; }
+                    @media print { .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="logo-text">UNICA<span class="logo-accent">TÓLICA</span></div>
+                    <div style="font-size: 12px; font-weight: bold; margin-top: 5px;">Fundación Universitaria Católica Lumine Gentium</div>
+                </div>
+
+                <div class="title">${type}</div>
+
+                <div class="content">
+                    La suscrita Directora de Registro Académico de la <span class="highlight">Fundación Universitaria Católica Lumine Gentium - UNICATÓLICA</span>,
+                    <br><br>
+                    <div style="text-align: center; font-size: 20px; margin: 30px 0;">CERTIFICA:</div>
+                    <br>
+                    Que el(la) estudiante <span class="highlight">${user.nombres.toUpperCase()} ${user.apellidos.toUpperCase()}</span>, 
+                    identificado(a) con documento de identidad No. <span class="highlight">${user.documento || 'No registrado'}</span>, 
+                    se encuentra actualmente matriculado(a) y con estado <span class="highlight">ACTIVO</span> en el programa de 
+                    <span class="highlight">INGENIERÍA DE SISTEMAS</span> (Código SNIES 10234).
+                    <br><br>
+                    A la fecha, el estudiante ha cursado y aprobado satisfactoriamente los créditos correspondientes a su nivel de formación actual, 
+                    manteniendo un promedio académico sobresaliente.
+                    <br><br>
+                    Se firma en la ciudad de Cali, a los ${new Date().getDate()} días del mes de ${new Intl.DateTimeFormat('es-ES', {month: 'long'}).format(new Date())} de ${new Date().getFullYear()}.
+                </div>
+
+                <div class="footer">
+                    <div class="signature">DIRECCIÓN DE REGISTRO ACADÉMICO</div>
+                    <div style="font-size: 12px; margin-top: 5px;">UNICATÓLICA - Sede Principal</div>
+                </div>
+
+                <div class="verification">
+                    Código de Verificación: ${verificationCode}
+                    <br>
+                    Valide la autenticidad de este documento en: https://verificar.unicatolica.online
+                </div>
+
+                <div class="no-print" style="margin-top: 30px; text-align: center;">
+                    <button onclick="window.print()" style="padding: 10px 20px; background: #032840; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                        IMPRIMIR / GUARDAR COMO PDF
+                    </button>
+                </div>
+            </body>
+            </html>
+        `;
+
+        const win = window.open('', '_blank');
+        win.document.write(certificateHtml);
+        win.document.close();
     },
 
     afterRender() {
