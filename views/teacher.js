@@ -97,18 +97,18 @@ Views.teacher = {
                     </div>
                     <span class="badge badge-success">Activo</span>
                 </div>
-                <h3 class="text-xl font-bold mb-1">${course.materia}</h3>
-                <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-6">${course.codigo} • ${course.periodo}</p>
+                <h3 class="text-xl font-black mb-1 text-slate-900">${course.materia}</h3>
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mb-6">${course.codigo} • ${course.periodo}</p>
                 
-                <div class="flex items-center gap-6 mb-8">
+                <div class="flex items-center gap-6 mb-8 text-slate-700">
                     <div>
                         <div class="text-2xl font-black">${course.num_estudiantes}</div>
-                        <div class="text-[10px] text-slate-400 font-bold uppercase">Estudiantes</div>
+                        <div class="text-[10px] text-slate-500 font-bold uppercase">Estudiantes</div>
                     </div>
                     <div class="w-px h-8 bg-slate-100"></div>
                     <div>
-                        <div class="text-sm font-bold text-slate-600">${course.salon}</div>
-                        <div class="text-[10px] text-slate-400 font-bold uppercase">${course.horario}</div>
+                        <div class="text-sm font-bold text-slate-800">${course.salon}</div>
+                        <div class="text-[10px] text-slate-500 font-bold uppercase">${course.horario}</div>
                     </div>
                 </div>
 

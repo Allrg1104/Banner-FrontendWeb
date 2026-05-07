@@ -288,71 +288,88 @@ Views.student = {
         document.getElementById('modal-container').classList.add('hidden');
     },
 
-    openDetails(materia) {
+    async openDetails(materia) {
+        const user = Auth.getUser();
         const modal = document.getElementById('modal-container');
         const content = document.getElementById('modal-content');
 
-        content.innerHTML = `
-            <div class="p-10">
-                <div class="flex justify-between items-start mb-10">
-                    <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 rounded-[20px] bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200">
-                            <i data-lucide="book-open" class="w-7 h-7"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-2xl font-black text-slate-900 tracking-tight">${materia}</h3>
-                            <p class="text-slate-400 text-sm font-bold uppercase tracking-widest">Seguimiento Académico Detallado</p>
-                        </div>
-                    </div>
-                    <button onclick="Views.student.closeModal()" class="p-3 hover:bg-slate-100 rounded-full transition-all group">
-                        <i data-lucide="x" class="w-6 h-6 text-slate-300 group-hover:text-slate-900"></i>
-                    </button>
-                </div>
+        // Cargando...
+        content.innerHTML = `<div class="p-20 text-center font-bold text-slate-400">Cargando detalles de ${materia}...</div>`;
+        modal.classList.remove('hidden');
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="space-y-8">
-                        <div class="card-premium bg-slate-50 border-none shadow-none p-6">
-                            <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-200 pb-2">Distribución de Notas</h4>
-                            <div class="space-y-6">
-                                ${[
-                { label: 'Corte 1 (30%)', val: 3.8, status: 'Completed' },
-                { label: 'Corte 2 (30%)', val: 4.2, status: 'Completed' },
-                { label: 'Corte 3 (40%)', val: '--', status: 'Pending' }
-            ].map(n => `
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <div class="text-sm font-bold text-slate-900">${n.label}</div>
-                                            <div class="text-[10px] ${n.status === 'Pending' ? 'text-amber-500' : 'text-emerald-500'} font-black uppercase tracking-tighter">${n.status}</div>
-                                        </div>
-                                        <div class="text-xl font-black ${n.val === '--' ? 'text-slate-300' : 'text-indigo-600'}">${n.val}</div>
-                                    </div>
-                                `).join('')}
+        try {
+            // Obtener todas las notas del estudiante para este periodo
+            const grades = await API.get(`/students/${user.id}/grades`);
+            const subjectGrades = grades.filter(g => g.materia === materia);
+            
+            // Mapear a los 3 cortes
+            const c1 = subjectGrades.find(g => g.componente === 'Corte 1')?.valor || '--';
+            const c2 = subjectGrades.find(g => g.componente === 'Corte 2')?.valor || '--';
+            const c3 = subjectGrades.find(g => g.componente === 'Corte 3')?.valor || '--';
+
+            content.innerHTML = `
+                <div class="p-10 animate-fade-in">
+                    <div class="flex justify-between items-start mb-10">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 rounded-[20px] bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200">
+                                <i data-lucide="book-open" class="w-7 h-7"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-black text-slate-900 tracking-tight">${materia}</h3>
+                                <p class="text-slate-400 text-sm font-bold uppercase tracking-widest">Seguimiento Académico Detallado</p>
                             </div>
                         </div>
+                        <button onclick="Views.student.closeModal()" class="p-3 hover:bg-slate-100 rounded-full transition-all group">
+                            <i data-lucide="x" class="w-6 h-6 text-slate-300 group-hover:text-slate-900"></i>
+                        </button>
                     </div>
 
-                    <div class="space-y-8">
-                        <div class="card-premium bg-slate-900 text-white border-none shadow-xl p-6">
-                            <h4 class="text-sm font-black text-slate-500 uppercase tracking-widest mb-6 border-b border-white/10 pb-2">Asistencia & Participación</h4>
-                            <div class="flex items-end gap-3 mb-4">
-                                <div class="text-4xl font-black">94%</div>
-                                <div class="text-xs text-emerald-400 font-bold mb-1 flex items-center gap-1">
-                                    <i data-lucide="trending-up" class="w-3 h-3"></i> Excelente
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-8">
+                            <div class="card-premium bg-slate-50 border-none shadow-none p-6">
+                                <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-200 pb-2">Distribución de Notas</h4>
+                                <div class="space-y-6">
+                                    ${[
+                                        { label: 'Corte 1 (30%)', val: c1, status: c1 === '--' ? 'Pending' : 'Completed' },
+                                        { label: 'Corte 2 (30%)', val: c2, status: c2 === '--' ? 'Pending' : 'Completed' },
+                                        { label: 'Corte 3 (40%)', val: c3, status: c3 === '--' ? 'Pending' : 'Completed' }
+                                    ].map(n => `
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <div class="text-sm font-bold text-slate-900">${n.label}</div>
+                                                <div class="text-[10px] ${n.status === 'Pending' ? 'text-amber-500' : 'text-emerald-500'} font-black uppercase tracking-tighter">${n.status}</div>
+                                            </div>
+                                            <div class="text-xl font-black ${n.val === '--' ? 'text-slate-300' : 'text-indigo-600'}">${n.val}</div>
+                                        </div>
+                                    `).join('')}
                                 </div>
                             </div>
-                            <p class="text-slate-400 text-xs leading-relaxed">Has asistido a 14 de 15 sesiones programadas. Tu participación activa es un factor clave en tu rendimiento proyectado.</p>
+                        </div>
+
+                        <div class="space-y-8">
+                            <div class="card-premium bg-slate-900 text-white border-none shadow-xl p-6">
+                                <h4 class="text-sm font-black text-slate-500 uppercase tracking-widest mb-6 border-b border-white/10 pb-2">Asistencia & Participación</h4>
+                                <div class="flex items-end gap-3 mb-4">
+                                    <div class="text-4xl font-black">94%</div>
+                                    <div class="text-xs text-emerald-400 font-bold mb-1 flex items-center gap-1">
+                                        <i data-lucide="trending-up" class="w-3 h-3"></i> Excelente
+                                    </div>
+                                </div>
+                                <p class="text-slate-400 text-xs leading-relaxed">Tu participación activa es un factor clave en tu rendimiento proyectado. Mantén este ritmo.</p>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="mt-10 flex gap-4">
-                    <button class="btn-premium btn-primary flex-1 py-4">Ver Programa del Curso</button>
-                    <button class="btn-premium btn-ghost flex-1 py-4">Contactar Docente</button>
+                    <div class="mt-10 flex gap-4">
+                        <button class="btn-premium btn-primary flex-1 py-4">Ver Programa del Curso</button>
+                        <button class="btn-premium btn-ghost flex-1 py-4">Contactar Docente</button>
+                    </div>
                 </div>
-            </div>
-        `;
-
-        modal.classList.remove('hidden');
+            `;
+        } catch (e) {
+            content.innerHTML = `<div class="p-20 text-center font-bold text-rose-500">Error al cargar las notas. Reintente.</div>`;
+        }
+        
         lucide.createIcons();
     },
 
