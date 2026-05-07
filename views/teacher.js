@@ -83,6 +83,9 @@ Views.teacher = {
                         </div>
 
                         <div id="modal-footer" class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                            <button id="btn-print-report" onclick="Views.teacher.downloadCourseReport()" class="btn-premium btn-ghost text-xs font-black hidden">
+                                <i data-lucide="printer" class="w-4 h-4 inline mr-2"></i> Generar Acta de Notas
+                            </button>
                             <button onclick="Views.teacher.closeModal()" class="btn-premium btn-ghost">Cerrar</button>
                             <button id="btn-save-all" class="btn-premium btn-primary px-8 font-black uppercase text-xs tracking-widest">Guardar Todo</button>
                         </div>
@@ -139,6 +142,9 @@ Views.teacher = {
 
         const datePicker = document.getElementById('attendance-date-picker-div');
         if (datePicker) datePicker.classList.add('hidden');
+
+        const btnPrint = document.getElementById('btn-print-report');
+        if (btnPrint) btnPrint.classList.remove('hidden');
 
         const btnSave = document.getElementById('btn-save-all');
         btnSave.onclick = () => this.saveAllGrades();
@@ -212,6 +218,9 @@ Views.teacher = {
         document.getElementById('modal-course-subtitle').innerText = `NRC: ${nrc} • Pase de lista diario`;
         modal.classList.remove('hidden');
 
+        const btnPrint = document.getElementById('btn-print-report');
+        if (btnPrint) btnPrint.classList.add('hidden');
+
         const btnSave = document.getElementById('btn-save-all');
         btnSave.onclick = () => this.saveAllAttendance();
         btnSave.innerText = 'Guardar Toda la Asistencia';
@@ -245,6 +254,111 @@ Views.teacher = {
             console.error(e);
         }
         lucide.createIcons();
+    },
+
+    async downloadCourseReport() {
+        const courseId = this.state.selectedCourse;
+        const students = this.state.students;
+        const teacher = Auth.getUser();
+        const course = this.state.courses.find(c => c.id === courseId);
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Acta de Notas - ${course.materia}</title>
+                <script src="https://cdn.tailwindcss.com"></script>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+                <style>
+                    body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; }
+                    @media print { .no-print { display: none; } }
+                    table { border-collapse: collapse; width: 100%; }
+                    th, td { border: 1px solid #e2e8f0; padding: 12px; font-size: 10px; }
+                    th { background-color: #f8fafc; text-transform: uppercase; letter-spacing: 0.05em; }
+                </style>
+            </head>
+            <body>
+                <div class="max-w-6xl mx-auto border-2 border-slate-900 p-10 rounded-xl">
+                    <div class="flex justify-between items-center mb-10 pb-6 border-b-2 border-slate-900">
+                        <div>
+                            <h1 class="text-3xl font-black uppercase text-slate-900">Unicatólica</h1>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em]">Acta Oficial de Calificaciones</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="bg-slate-900 text-white px-4 py-2 rounded-lg inline-block font-black text-sm mb-1">NRC: ${course.nrc}</div>
+                            <p class="text-[9px] font-bold text-slate-400 italic">${new Date().toLocaleString()}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-6 mb-10 text-[10px] uppercase font-black">
+                        <div class="border-l-4 border-indigo-600 pl-4">
+                            <span class="text-slate-400 block mb-1">Asignatura</span>
+                            <span class="text-slate-900">${course.materia} (${course.codigo})</span>
+                        </div>
+                        <div class="border-l-4 border-indigo-600 pl-4">
+                            <span class="text-slate-400 block mb-1">Docente Responsable</span>
+                            <span class="text-slate-900">${teacher.nombres} ${teacher.apellidos}</span>
+                        </div>
+                        <div class="border-l-4 border-indigo-600 pl-4">
+                            <span class="text-slate-400 block mb-1">Periodo / Sede</span>
+                            <span class="text-slate-900">2025-II / SEDE PANCE</span>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID Estudiante</th>
+                                <th>Nombre Completo</th>
+                                <th class="text-center">C1 (30%)</th>
+                                <th class="text-center">C2 (30%)</th>
+                                <th class="text-center">C3 (40%)</th>
+                                <th class="text-center bg-indigo-50 text-indigo-900">Definitiva</th>
+                                <th class="text-center">Asist. %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${students.map(s => {
+                                const c1 = s.grades['Corte 1'] || 0;
+                                const c2 = s.grades['Corte 2'] || 0;
+                                const c3 = s.grades['Corte 3'] || 0;
+                                const def = (c1 * 0.3 + c2 * 0.3 + c3 * 0.4).toFixed(2);
+                                return `
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="font-mono text-indigo-600 font-bold">${s.institutional_id}</td>
+                                        <td class="font-black text-slate-900">${s.nombres} ${s.apellidos}</td>
+                                        <td class="text-center font-bold">${c1}</td>
+                                        <td class="text-center font-bold">${c2}</td>
+                                        <td class="text-center font-bold">${c3}</td>
+                                        <td class="text-center font-black bg-indigo-50/50 text-indigo-700">${def}</td>
+                                        <td class="text-center font-bold ${s.asistencia?.porcentaje < 70 ? 'text-rose-600' : 'text-emerald-600'}">${s.asistencia?.porcentaje || 0}%</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+
+                    <div class="mt-24 grid grid-cols-2 gap-20 px-10">
+                        <div class="text-center border-t-2 border-slate-900 pt-4">
+                            <p class="text-xs font-black uppercase">${teacher.nombres} ${teacher.apellidos}</p>
+                            <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1">Firma del Docente Titular</p>
+                        </div>
+                        <div class="text-center border-t-2 border-slate-900 pt-4">
+                            <p class="text-xs font-black uppercase">Secretaría Académica</p>
+                            <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1">Sello y Firma de Validación</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-20 flex justify-center no-print">
+                        <button onclick="window.print()" class="bg-slate-900 text-white px-12 py-4 rounded-full font-black uppercase text-xs tracking-[0.2em] shadow-2xl hover:scale-105 transition-all">
+                            Emitir Reporte Oficial
+                        </button>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
     },
 
     async refreshAttendanceList() {

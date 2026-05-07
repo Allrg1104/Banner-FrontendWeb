@@ -298,14 +298,23 @@ Views.student = {
         modal.classList.remove('hidden');
 
         try {
-            // Obtener todas las notas del estudiante para este periodo
-            const grades = await API.get(`/students/${user.id}/grades`);
+            // Obtener todas las notas y asistencias del estudiante
+            const [grades, allAttendance] = await Promise.all([
+                API.get(`/students/${user.id}/grades`),
+                API.get(`/students/${user.id}/attendance`)
+            ]);
+
             const subjectGrades = grades.filter(g => g.materia === materia);
+            const absences = allAttendance.filter(a => a.materia === materia && a.tipo !== 'presente');
             
             // Mapear a los 3 cortes
             const c1 = subjectGrades.find(g => g.componente === 'Corte 1')?.valor || '--';
             const c2 = subjectGrades.find(g => g.componente === 'Corte 2')?.valor || '--';
             const c3 = subjectGrades.find(g => g.componente === 'Corte 3')?.valor || '--';
+
+            const attendancePercent = m.asistencia?.porcentaje || 0;
+            const statusLabel = attendancePercent > 80 ? 'Excelente' : attendancePercent > 60 ? 'Regular' : 'En Riesgo';
+            const statusColor = attendancePercent > 80 ? 'text-emerald-400' : attendancePercent > 60 ? 'text-amber-400' : 'text-rose-400';
 
             content.innerHTML = `
                 <div class="p-10 animate-fade-in">
@@ -325,19 +334,20 @@ Views.student = {
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Notas Section -->
                         <div class="space-y-8">
                             <div class="card-premium bg-slate-50 border-none shadow-none p-6">
                                 <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-200 pb-2">Distribución de Notas</h4>
                                 <div class="space-y-6">
                                     ${[
-                                        { label: 'Corte 1 (30%)', val: c1, status: c1 === '--' ? 'Pending' : 'Completed' },
-                                        { label: 'Corte 2 (30%)', val: c2, status: c2 === '--' ? 'Pending' : 'Completed' },
-                                        { label: 'Corte 3 (40%)', val: c3, status: c3 === '--' ? 'Pending' : 'Completed' }
+                                        { label: 'Corte 1 (30%)', val: c1 },
+                                        { label: 'Corte 2 (30%)', val: c2 },
+                                        { label: 'Corte 3 (40%)', val: c3 }
                                     ].map(n => `
                                         <div class="flex items-center justify-between">
                                             <div>
                                                 <div class="text-sm font-bold text-slate-900">${n.label}</div>
-                                                <div class="text-[10px] ${n.status === 'Pending' ? 'text-amber-500' : 'text-emerald-500'} font-black uppercase tracking-tighter">${n.status}</div>
+                                                <div class="text-[10px] ${n.val === '--' ? 'text-amber-500' : 'text-emerald-500'} font-black uppercase tracking-tighter">${n.val === '--' ? 'Pendiente' : 'Cargada'}</div>
                                             </div>
                                             <div class="text-xl font-black ${n.val === '--' ? 'text-slate-300' : 'text-indigo-600'}">${n.val}</div>
                                         </div>
@@ -346,23 +356,43 @@ Views.student = {
                             </div>
                         </div>
 
-                        <div class="space-y-8">
+                        <!-- Asistencia Section -->
+                        <div class="space-y-6">
                             <div class="card-premium bg-slate-900 text-white border-none shadow-xl p-6">
-                                <h4 class="text-sm font-black text-slate-500 uppercase tracking-widest mb-6 border-b border-white/10 pb-2">Asistencia & Participación</h4>
+                                <h4 class="text-sm font-black text-slate-500 uppercase tracking-widest mb-6 border-b border-white/10 pb-2">Asistencia Real</h4>
                                 <div class="flex items-end gap-3 mb-4">
-                                    <div class="text-4xl font-black">94%</div>
-                                    <div class="text-xs text-emerald-400 font-bold mb-1 flex items-center gap-1">
-                                        <i data-lucide="trending-up" class="w-3 h-3"></i> Excelente
+                                    <div class="text-4xl font-black">${attendancePercent}%</div>
+                                    <div class="text-xs ${statusColor} font-bold mb-1 flex items-center gap-1 uppercase tracking-widest">
+                                        ${statusLabel}
                                     </div>
                                 </div>
-                                <p class="text-slate-400 text-xs leading-relaxed">Tu participación activa es un factor clave en tu rendimiento proyectado. Mantén este ritmo.</p>
+                                <p class="text-slate-400 text-[10px] leading-relaxed uppercase font-bold tracking-widest">Calculado sobre el total de clases registradas por el docente.</p>
+                            </div>
+
+                            <!-- Historial de Fallas -->
+                            <div class="card-premium bg-slate-50 border-none shadow-none p-6">
+                                <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-200 pb-2">Registro de Inasistencias</h4>
+                                <div class="max-h-32 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                                    ${absences.length === 0 ? `
+                                        <div class="text-[10px] text-emerald-600 font-black uppercase tracking-widest">Sin fallas registradas 🎉</div>
+                                    ` : absences.map(a => `
+                                        <div class="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100">
+                                            <div class="text-[10px] font-black text-slate-600">${a.fecha}</div>
+                                            <div class="text-[9px] font-black uppercase px-2 py-1 rounded bg-rose-50 text-rose-500 border border-rose-100">
+                                                ${a.tipo === 'ausente_no_justificada' ? 'Falla' : 'Justificada'}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="mt-10 flex gap-4">
-                        <button class="btn-premium btn-primary flex-1 py-4">Ver Programa del Curso</button>
-                        <button class="btn-premium btn-ghost flex-1 py-4">Contactar Docente</button>
+                        <button onclick="Views.student.downloadAcademicReport('${materia}', ${JSON.stringify(m).replace(/"/g, '&quot;')})" class="btn-premium btn-primary flex-1 py-4 uppercase font-black text-[10px] tracking-widest">
+                            <i data-lucide="download" class="w-4 h-4 inline mr-2"></i> Descargar Reporte PDF
+                        </button>
+                        <button class="btn-premium btn-ghost flex-1 py-4 uppercase font-black text-[10px] tracking-widest">Contactar Docente</button>
                     </div>
                 </div>
             `;
@@ -371,6 +401,118 @@ Views.student = {
         }
         
         lucide.createIcons();
+    },
+
+    async downloadAcademicReport(materia, m) {
+        const user = Auth.getUser();
+        const [grades, allAttendance] = await Promise.all([
+            API.get(`/students/${user.id}/grades`),
+            API.get(`/students/${user.id}/attendance`)
+        ]);
+
+        const subjectGrades = grades.filter(g => g.materia === materia);
+        const absences = allAttendance.filter(a => a.materia === materia && a.tipo !== 'presente');
+        
+        const c1 = subjectGrades.find(g => g.componente === 'Corte 1')?.valor || '0.0';
+        const c2 = subjectGrades.find(g => g.componente === 'Corte 2')?.valor || '0.0';
+        const c3 = subjectGrades.find(g => g.componente === 'Corte 3')?.valor || '0.0';
+        const def = (c1 * 0.3 + c2 * 0.3 + c3 * 0.4).toFixed(2);
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Reporte Académico - ${materia}</title>
+                <script src="https://cdn.tailwindcss.com"></script>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+                <style>
+                    body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; }
+                    @media print { .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <div class="max-w-4xl mx-auto border p-10 rounded-xl bg-white shadow-sm">
+                    <!-- Header -->
+                    <div class="flex justify-between items-center border-b-2 border-slate-900 pb-8 mb-8">
+                        <div>
+                            <h1 class="text-3xl font-black text-slate-900 uppercase">Unicatólica</h1>
+                            <p class="text-xs font-bold text-slate-500 tracking-widest uppercase">Sistema de Gestión Académica • SIS</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-black uppercase">Reporte de Seguimiento</p>
+                            <p class="text-[10px] text-slate-400 font-bold">${new Date().toLocaleString()}</p>
+                        </div>
+                    </div>
+
+                    <!-- Student Info -->
+                    <div class="grid grid-cols-2 gap-8 mb-10 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estudiante</p>
+                            <p class="text-lg font-black text-slate-900">${user.nombres} ${user.apellidos}</p>
+                            <p class="text-xs font-bold text-indigo-600 uppercase tracking-tighter">ID: ${user.codigo || '000405330'}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Asignatura</p>
+                            <p class="text-lg font-black text-slate-900">${materia}</p>
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-tighter">Docente: ${m.docente || 'N/A'}</p>
+                        </div>
+                    </div>
+
+                    <!-- Grades Table -->
+                    <div class="mb-10">
+                        <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Calificaciones Detalladas</h4>
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-900 text-white">
+                                    <th class="p-4 text-[10px] font-black uppercase tracking-widest rounded-l-lg">Corte 1 (30%)</th>
+                                    <th class="p-4 text-[10px] font-black uppercase tracking-widest">Corte 2 (30%)</th>
+                                    <th class="p-4 text-[10px] font-black uppercase tracking-widest">Corte 3 (40%)</th>
+                                    <th class="p-4 text-[10px] font-black uppercase tracking-widest text-right rounded-r-lg">Definitiva Actual</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b">
+                                    <td class="p-6 text-xl font-black text-slate-900">${c1}</td>
+                                    <td class="p-6 text-xl font-black text-slate-900">${c2}</td>
+                                    <td class="p-6 text-xl font-black text-slate-900">${c3}</td>
+                                    <td class="p-6 text-2xl font-black text-indigo-600 text-right">${def}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Attendance Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="border p-6 rounded-2xl">
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Resumen de Asistencia</h4>
+                            <div class="flex items-center gap-4">
+                                <div class="text-4xl font-black text-slate-900">${m.asistencia?.porcentaje || 0}%</div>
+                                <div class="text-[10px] font-black uppercase px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg">Asistencia Activa</div>
+                            </div>
+                        </div>
+                        <div class="border p-6 rounded-2xl">
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Registro de Fallas</h4>
+                            ${absences.length === 0 ? '<p class="text-xs font-bold text-emerald-600 uppercase">Sin inasistencias reportadas</p>' : `
+                                <ul class="space-y-2">
+                                    ${absences.map(a => `<li class="text-[10px] font-bold text-slate-600 flex justify-between"><span>${a.fecha}</span> <span class="text-rose-500 uppercase">${a.tipo}</span></li>`).join('')}
+                                </ul>
+                            `}
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="mt-20 pt-8 border-t border-slate-100 text-center">
+                        <p class="text-[8px] text-slate-400 font-bold uppercase tracking-[0.2em]">Este documento es de carácter informativo y no constituye un certificado de notas oficial de registro académico.</p>
+                    </div>
+                </div>
+                
+                <div class="fixed bottom-8 right-8 no-print">
+                    <button onclick="window.print()" class="bg-indigo-600 text-white px-8 py-3 rounded-full font-black text-sm shadow-xl hover:bg-indigo-700 transition-all">IMPRIMIR REPORTE</button>
+                </div>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
     },
 
     showHighFidInvoice() {
