@@ -12,9 +12,14 @@ const Auth = {
 
             const result = await API.post('/auth/login', { data: encrypted });
             if (result.token) {
+                let userData = result.user;
+                if (result.data) {
+                    const bytes = CryptoJS.AES.decrypt(result.data, secret);
+                    userData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+                }
                 sessionStorage.setItem('token', result.token);
-                sessionStorage.setItem('user', JSON.stringify(result.user));
-                return { success: true, user: result.user };
+                sessionStorage.setItem('user', JSON.stringify(userData));
+                return { success: true, user: userData };
             }
             return { success: false, error: result.error || 'Error desconocido' };
         } catch (err) {
