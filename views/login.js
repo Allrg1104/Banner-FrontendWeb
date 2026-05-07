@@ -120,7 +120,7 @@ window.Views.login = {
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = e.target.querySelector('button');
+            const btn = e.target.querySelector('button[type="submit"]');
             const originalContent = btn.innerHTML;
 
             btn.disabled = true;
