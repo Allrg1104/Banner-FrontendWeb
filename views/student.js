@@ -304,8 +304,8 @@ Views.student = {
                 API.get(`/students/${user.id}/attendance`)
             ]);
 
-            const subjectGrades = grades.filter(g => g.materia === materia);
-            const absences = allAttendance.filter(a => a.materia === materia && a.tipo !== 'presente');
+            const subjectGrades = grades.filter(g => g.materia.trim().toUpperCase() === materia.trim().toUpperCase());
+            const absences = allAttendance.filter(a => a.materia.trim().toUpperCase() === materia.trim().toUpperCase() && a.tipo !== 'presente');
             
             // Mapear a los 3 cortes
             const c1 = subjectGrades.find(g => g.componente === 'Corte 1')?.valor || '--';
