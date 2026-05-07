@@ -2,7 +2,8 @@
  * API Wrapper - Communication with Backend
  */
 
-const API_BASE_URL = window.location.hostname === 'api.unicatolica.online' || window.location.hostname === 'unicatolica.online'
+// Híbrido: Detectar si estamos en producción o en entorno local
+const API_BASE_URL = window.location.hostname.includes('unicatolica.online')
     ? 'https://api.unicatolica.online/api'
     : 'http://localhost:3000/api';
 
