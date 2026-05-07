@@ -298,21 +298,31 @@ Views.student = {
         modal.classList.remove('hidden');
 
         try {
-            // Obtener todas las notas y asistencias del estudiante
-            const [grades, allAttendance] = await Promise.all([
+            console.log('📡 Cargando detalles para:', materia);
+            
+            // Cargar datos en paralelo con manejo de errores individual
+            const [gradesRes, attendanceRes] = await Promise.allSettled([
                 API.get(`/students/${user.id}/grades`),
                 API.get(`/students/${user.id}/attendance`)
             ]);
 
-            const subjectGrades = grades.filter(g => g.materia.trim().toUpperCase() === materia.trim().toUpperCase());
-            const absences = allAttendance.filter(a => a.materia.trim().toUpperCase() === materia.trim().toUpperCase() && a.tipo !== 'presente');
+            const grades = gradesRes.status === 'fulfilled' ? gradesRes.value : [];
+            const allAttendance = attendanceRes.status === 'fulfilled' ? attendanceRes.value : [];
+
+            if (gradesRes.status === 'rejected') console.error('❌ Error cargando notas:', gradesRes.reason);
+            if (attendanceRes.status === 'rejected') console.error('❌ Error cargando asistencias:', attendanceRes.reason);
+
+            // Filtrado seguro (insensible a mayúsculas y espacios)
+            const safeMateria = (materia || '').trim().toUpperCase();
             
-            // Mapear a los 3 cortes
+            const subjectGrades = grades.filter(g => (g.materia || '').trim().toUpperCase() === safeMateria);
+            const absences = allAttendance.filter(a => (a.materia || '').trim().toUpperCase() === safeMateria && a.tipo !== 'presente');
+            
             const c1 = subjectGrades.find(g => g.componente === 'Corte 1')?.valor || '--';
             const c2 = subjectGrades.find(g => g.componente === 'Corte 2')?.valor || '--';
             const c3 = subjectGrades.find(g => g.componente === 'Corte 3')?.valor || '--';
 
-            const attendancePercent = m.asistencia?.porcentaje || 0;
+            const attendancePercent = m?.asistencia?.porcentaje || 0;
             const statusLabel = attendancePercent > 80 ? 'Excelente' : attendancePercent > 60 ? 'Regular' : 'En Riesgo';
             const statusColor = attendancePercent > 80 ? 'text-emerald-400' : attendancePercent > 60 ? 'text-amber-400' : 'text-rose-400';
 
@@ -334,7 +344,6 @@ Views.student = {
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <!-- Notas Section -->
                         <div class="space-y-8">
                             <div class="card-premium bg-slate-50 border-none shadow-none p-6">
                                 <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-200 pb-2">Distribución de Notas</h4>
@@ -356,7 +365,6 @@ Views.student = {
                             </div>
                         </div>
 
-                        <!-- Asistencia Section -->
                         <div class="space-y-6">
                             <div class="card-premium bg-slate-900 text-white border-none shadow-xl p-6">
                                 <h4 class="text-sm font-black text-slate-500 uppercase tracking-widest mb-6 border-b border-white/10 pb-2">Asistencia Real</h4>
@@ -366,10 +374,9 @@ Views.student = {
                                         ${statusLabel}
                                     </div>
                                 </div>
-                                <p class="text-slate-400 text-[10px] leading-relaxed uppercase font-bold tracking-widest">Calculado sobre el total de clases registradas por el docente.</p>
+                                <p class="text-slate-400 text-[10px] leading-relaxed uppercase font-bold tracking-widest">Calculado sobre registros docentes.</p>
                             </div>
 
-                            <!-- Historial de Fallas -->
                             <div class="card-premium bg-slate-50 border-none shadow-none p-6">
                                 <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-200 pb-2">Registro de Inasistencias</h4>
                                 <div class="max-h-32 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
@@ -389,7 +396,7 @@ Views.student = {
                     </div>
 
                     <div class="mt-10 flex gap-4">
-                        <button onclick="Views.student.downloadAcademicReport('${materia}', ${JSON.stringify(m).replace(/"/g, '&quot;')})" class="btn-premium btn-primary flex-1 py-4 uppercase font-black text-[10px] tracking-widest">
+                        <button onclick="Views.student.downloadAcademicReport('${materia.replace(/'/g, "\\'")}', ${JSON.stringify(m).replace(/"/g, '&quot;')})" class="btn-premium btn-primary flex-1 py-4 uppercase font-black text-[10px] tracking-widest">
                             <i data-lucide="download" class="w-4 h-4 inline mr-2"></i> Descargar Reporte PDF
                         </button>
                         <button class="btn-premium btn-ghost flex-1 py-4 uppercase font-black text-[10px] tracking-widest">Contactar Docente</button>
@@ -397,7 +404,8 @@ Views.student = {
                 </div>
             `;
         } catch (e) {
-            content.innerHTML = `<div class="p-20 text-center font-bold text-rose-500">Error al cargar las notas. Reintente.</div>`;
+            console.error('❌ Error fatal en modal:', e);
+            content.innerHTML = `<div class="p-20 text-center font-bold text-rose-500">Error interno al procesar los datos. Por favor, revisa la consola.</div>`;
         }
         
         lucide.createIcons();
