@@ -37,6 +37,20 @@ const Auth = {
         }
     },
 
+    async refreshUser() {
+        if (!this.isAuthenticated()) return null;
+        try {
+            const user = await API.get('/auth/me');
+            if (user && user.id) {
+                sessionStorage.setItem('user', JSON.stringify(user));
+                return user;
+            }
+        } catch (err) {
+            console.warn('No se pudo refrescar el usuario desde el servidor', err);
+        }
+        return this.getUser();
+    },
+
     getToken() {
         return sessionStorage.getItem('token');
     },

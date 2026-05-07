@@ -60,7 +60,7 @@ window.Views.login = {
                                     <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                                         <i data-lucide="user" class="w-5 h-5"></i>
                                     </span>
-                                    <input type="text" id="username" class="input-premium pl-12" placeholder="ej: santiago.espinosa01" required>
+                                    <input type="text" id="username" class="input-premium pl-12" placeholder="ej: pepito.perez01" required>
                                 </div>
                             </div>
 
@@ -73,7 +73,10 @@ window.Views.login = {
                                     <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                                         <i data-lucide="lock" class="w-5 h-5"></i>
                                     </span>
-                                    <input type="password" id="clv_acceso" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" class="input-premium pl-12" placeholder="••••••••" required>
+                                    <input type="password" id="clv_acceso" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" class="input-premium pl-12 pr-12" placeholder="••••••••" required>
+                                    <button type="button" id="toggle-password" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors focus:outline-none">
+                                        <i data-lucide="eye" id="eye-icon" class="w-5 h-5"></i>
+                                    </button>
                                 </div>
                             </div>
 
@@ -97,6 +100,24 @@ window.Views.login = {
 
     afterRender() {
         const form = document.getElementById('login-form');
+
+        // Toggle password visibility
+        const togglePasswordBtn = document.getElementById('toggle-password');
+        const passwordInput = document.getElementById('clv_acceso');
+
+        if (togglePasswordBtn && passwordInput) {
+            togglePasswordBtn.addEventListener('click', () => {
+                const isPassword = passwordInput.getAttribute('type') === 'password';
+                passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+
+                // Actualizar el icono
+                togglePasswordBtn.innerHTML = `<i data-lucide="${isPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i>`;
+                if (window.lucide) {
+                    window.lucide.createIcons({ nameAttr: 'data-lucide' });
+                }
+            });
+        }
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button');

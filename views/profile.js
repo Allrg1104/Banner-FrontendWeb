@@ -7,7 +7,14 @@ Views['profile'] = {
     isEditing: false,
 
     async render() {
-        const user = Auth.getUser();
+        let user = await Auth.refreshUser();
+        if (!user) user = Auth.getUser();
+        let metadata = {};
+        if (user && user.metadata) {
+            try {
+                metadata = typeof user.metadata === 'string' ? JSON.parse(user.metadata) : user.metadata;
+            } catch (e) { console.error('Error parsing metadata', e); }
+        }
 
         return `
             <div class="max-w-6xl mx-auto py-8 animate-fade-in space-y-10">
@@ -17,29 +24,29 @@ Views['profile'] = {
                     <div class="lg:w-1/3 space-y-6">
                         <div class="card-premium bg-white p-10 text-center shadow-xl border-t-4 border-[#032840]">
                             <h2 class="text-2xl font-black text-slate-900 leading-tight uppercase mb-2">
-                                ${user.nombres || 'SANTIAGO JOSE'}<br>
-                                ${user.apellidos || 'ESPINOSA/ORTIZ'}
+                                ${user.nombres || 'Usuario'}<br>
+                                ${user.apellidos || ''}
                             </h2>
-                            <p class="text-slate-500 font-bold text-xs mb-8">Número de ID: 000405330</p>
+                            <p class="text-slate-500 font-bold text-xs mb-8">Número de ID: ${String(user.id || '0').padStart(5, '0')}</p>
                             
                             <div class="space-y-4 text-left">
                                 <div class="flex items-center gap-4 text-[11px] font-medium text-slate-600">
                                     <div class="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
                                         <i data-lucide="mail" class="w-4 h-4 text-[#fab720]"></i>
                                     </div>
-                                    <span class="truncate">${user.usuario}@unicatolica.edu.co</span>
+                                    <span class="truncate">${user.email || (user.username ? user.username + '@unicatolica.edu.co' : 'Correo no registrado')}</span>
                                 </div>
                                 <div class="flex items-center gap-4 text-[11px] font-medium text-slate-600">
                                     <div class="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
                                         <i data-lucide="map-pin" class="w-4 h-4 text-[#fab720]"></i>
                                     </div>
-                                    <span>CRA 94A 2 41, Cali, Valle 76001</span>
+                                    <span>${metadata.direccion || 'No registrada'}</span>
                                 </div>
                                 <div class="flex items-center gap-4 text-[11px] font-medium text-slate-600">
                                     <div class="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
                                         <i data-lucide="phone" class="w-4 h-4 text-[#fab720]"></i>
                                     </div>
-                                    <span>3012117114</span>
+                                    <span>${user.telefono || 'No registrado'}</span>
                                 </div>
                             </div>
                         </div>
@@ -66,65 +73,65 @@ Views['profile'] = {
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Nombre</label>
                                     ${this.isEditing ?
-                `<input type="text" id="edit-nombre" class="input-premium py-1 text-sm" value="${user.nombres.split(' ')[0] || 'SANTIAGO JOSE'}">` :
-                `<div class="text-sm font-bold text-slate-800">${user.nombres.split(' ')[0] || 'SANTIAGO JOSE'}</div>`
+                `<input type="text" id="edit-nombre" class="input-premium py-1 text-sm" value="${user.nombres || ''}">` :
+                `<div class="text-sm font-bold text-slate-800">${user.nombres || '-'}</div>`
             }
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Segundo nombre</label>
                                     ${this.isEditing ?
-                `<input type="text" id="edit-segundo-nombre" class="input-premium py-1 text-sm" value="-">` :
-                `<div class="text-sm font-bold text-slate-800">-</div>`
+                `<input type="text" id="edit-segundo-nombre" class="input-premium py-1 text-sm" value="${metadata.segundo_nombre || ''}">` :
+                `<div class="text-sm font-bold text-slate-800">${metadata.segundo_nombre || '-'}</div>`
             }
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Apellido</label>
                                     ${this.isEditing ?
-                `<input type="text" id="edit-apellido" class="input-premium py-1 text-sm" value="${user.apellidos || 'ESPINOSA/ORTIZ'}">` :
-                `<div class="text-sm font-bold text-slate-800">${user.apellidos || 'ESPINOSA/ORTIZ'}</div>`
+                `<input type="text" id="edit-apellido" class="input-premium py-1 text-sm" value="${user.apellidos || ''}">` :
+                `<div class="text-sm font-bold text-slate-800">${user.apellidos || '-'}</div>`
             }
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fecha de nacimiento</label>
                                     ${this.isEditing ?
-                `<input type="date" id="edit-nacimiento" class="input-premium py-1 text-sm" value="2004-05-07">` :
-                `<div class="text-sm font-bold text-slate-800">7 de mayo de 2004</div>`
+                `<input type="date" id="edit-nacimiento" class="input-premium py-1 text-sm" value="${user.fecha_nacimiento || ''}">` :
+                `<div class="text-sm font-bold text-slate-800">${user.fecha_nacimiento || 'No registrada'}</div>`
             }
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Estado civil</label>
                                     ${this.isEditing ?
                 `<select id="edit-civil" class="input-premium py-1 text-sm">
-                                            <option value="Soltero(a)" selected>Soltero(a)</option>
-                                            <option value="Casado(a)">Casado(a)</option>
-                                            <option value="Union Libre">Unión Libre</option>
+                                            <option value="Soltero(a)" ${metadata.estado_civil === 'Soltero(a)' ? 'selected' : ''}>Soltero(a)</option>
+                                            <option value="Casado(a)" ${metadata.estado_civil === 'Casado(a)' ? 'selected' : ''}>Casado(a)</option>
+                                            <option value="Union Libre" ${metadata.estado_civil === 'Union Libre' ? 'selected' : ''}>Unión Libre</option>
                                         </select>` :
-                `<div class="text-sm font-bold text-slate-800">Soltero(a)</div>`
+                `<div class="text-sm font-bold text-slate-800">${metadata.estado_civil || 'Soltero(a)'}</div>`
             }
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Sexo</label>
                                     ${this.isEditing ?
                 `<select id="edit-sexo" class="input-premium py-1 text-sm">
-                                            <option value="Masculino" selected>Masculino</option>
-                                            <option value="Femenino">Femenino</option>
-                                            <option value="Otro">Otro</option>
+                                            <option value="Masculino" ${metadata.sexo === 'Masculino' ? 'selected' : ''}>Masculino</option>
+                                            <option value="Femenino" ${metadata.sexo === 'Femenino' ? 'selected' : ''}>Femenino</option>
+                                            <option value="Otro" ${metadata.sexo === 'Otro' ? 'selected' : ''}>Otro</option>
                                         </select>` :
-                `<div class="text-sm font-bold text-slate-800">Masculino</div>`
+                `<div class="text-sm font-bold text-slate-800">${metadata.sexo || 'Masculino'}</div>`
             }
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Nombre preferido</label>
                                     ${this.isEditing ?
-                `<input type="text" id="edit-preferido" class="input-premium py-1 text-sm" value="-">` :
-                `<div class="text-sm font-bold text-slate-800">-</div>`
+                `<input type="text" id="edit-preferido" class="input-premium py-1 text-sm" value="${metadata.nombre_preferido || ''}">` :
+                `<div class="text-sm font-bold text-slate-800">${metadata.nombre_preferido || '-'}</div>`
             }
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Identificación de género</label>
                                     ${this.isEditing ?
-                `<input type="text" id="edit-genero" class="input-premium py-1 text-sm" value="Masculino">` :
-                `<div class="text-sm font-bold text-slate-800">Masculino</div>`
+                `<input type="text" id="edit-genero" class="input-premium py-1 text-sm" value="${metadata.identificacion_genero || ''}">` :
+                `<div class="text-sm font-bold text-slate-800">${metadata.identificacion_genero || 'Masculino'}</div>`
             }
                                 </div>
                             </div>
@@ -142,13 +149,13 @@ Views['profile'] = {
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Correo Institucional</label>
-                                    <div class="text-sm font-bold text-slate-800">${user.usuario}@unicatolica.edu.co</div>
+                                    <div class="text-sm font-bold text-slate-800">${user.email || (user.username ? user.username + '@unicatolica.edu.co' : 'No registrado')}</div>
                                     <div class="text-[9px] text-slate-400 font-bold mt-1">(No actualizable)</div>
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Correo Personal</label>
                                     <div class="flex items-center gap-3">
-                                        <div class="text-sm font-bold text-slate-800">santiago_espinosa10@hotmail.com</div>
+                                        <div class="text-sm font-bold text-slate-800">${metadata.email_personal || 'No registrado'}</div>
                                         <button onclick="Views.profile.openEditModal('Correo Personal')" class="w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center"><i data-lucide="edit-2" class="w-3 h-3 text-[#fab720]"></i></button>
                                         <button onclick="Views.profile.simulateDelete('Correo')" class="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center"><i data-lucide="trash" class="w-3 h-3 text-red-500"></i></button>
                                     </div>
@@ -167,7 +174,7 @@ Views['profile'] = {
                             <div>
                                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Celular (Principal)</label>
                                 <div class="flex items-center gap-4">
-                                    <div class="text-sm font-bold text-slate-800">3012117114</div>
+                                    <div class="text-sm font-bold text-slate-800">${user.telefono || 'No registrado'}</div>
                                     <button onclick="Views.profile.openEditModal('Teléfono')" class="w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center"><i data-lucide="edit-2" class="w-3 h-3 text-[#fab720]"></i></button>
                                     <button onclick="Views.profile.simulateDelete('Teléfono')" class="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center"><i data-lucide="trash" class="w-3 h-3 text-red-500"></i></button>
                                 </div>
@@ -185,8 +192,7 @@ Views['profile'] = {
                             <div>
                                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Residencia</label>
                                 <div class="text-xs font-bold text-slate-400 mb-1">Actual</div>
-                                <div class="text-xs font-medium text-slate-500 mb-1">11/02/2022 - (Sin fecha de fin)</div>
-                                <div class="text-sm font-bold text-slate-800">CRA 94A 2 41</div>
+                                <div class="text-sm font-bold text-slate-800">${metadata.direccion || 'No registrada'}</div>
                             </div>
                         </div>
 
@@ -199,26 +205,30 @@ Views['profile'] = {
                                 </button>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                ${metadata.emergencia && metadata.emergencia[0] && metadata.emergencia[0].nombre ? `
                                 <div class="relative group">
-                                    <div class="text-sm font-black text-slate-800 mb-1">1. JANETH ORTIZ</div>
-                                    <div class="text-xs font-medium text-slate-500">Acudiente</div>
-                                    <div class="text-xs font-medium text-slate-500">Teléfono: 317 4169964</div>
-                                    <div class="text-xs font-medium text-slate-500 uppercase">CRA 94A 2 41, Cali, Valle 76001</div>
+                                    <div class="text-sm font-black text-slate-800 mb-1">1. ${metadata.emergencia[0].nombre}</div>
+                                    <div class="text-xs font-medium text-slate-500">${metadata.emergencia[0].parentesco || 'Familiar'}</div>
+                                    <div class="text-xs font-medium text-slate-500">Teléfono: ${metadata.emergencia[0].telefono || 'No registrado'}</div>
+                                    <div class="text-xs font-medium text-slate-500 uppercase">${metadata.emergencia[0].direccion || 'Sin dirección'}</div>
                                     <div class="flex gap-2 mt-3">
                                         <button onclick="Views.profile.openEditModal('Contacto 1')" class="w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center"><i data-lucide="edit-2" class="w-3 h-3 text-[#fab720]"></i></button>
                                         <button onclick="Views.profile.simulateDelete('Contacto')" class="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center"><i data-lucide="trash" class="w-3 h-3 text-red-500"></i></button>
                                     </div>
                                 </div>
+                                ` : '<div class="text-sm text-slate-500 italic">No hay contacto primario registrado.</div>'}
+                                ${metadata.emergencia && metadata.emergencia[1] && metadata.emergencia[1].nombre ? `
                                 <div class="relative group">
-                                    <div class="text-sm font-black text-slate-800 mb-1">2. DEYSON FERNANDO ESPINOSA</div>
-                                    <div class="text-xs font-medium text-slate-500">Acudiente</div>
-                                    <div class="text-xs font-medium text-slate-500">Teléfono: 311 7246085</div>
-                                    <div class="text-xs font-medium text-slate-500 uppercase">Cali, Valle 76001</div>
+                                    <div class="text-sm font-black text-slate-800 mb-1">2. ${metadata.emergencia[1].nombre}</div>
+                                    <div class="text-xs font-medium text-slate-500">${metadata.emergencia[1].parentesco || 'Familiar'}</div>
+                                    <div class="text-xs font-medium text-slate-500">Teléfono: ${metadata.emergencia[1].telefono || 'No registrado'}</div>
+                                    <div class="text-xs font-medium text-slate-500 uppercase">${metadata.emergencia[1].direccion || 'Sin dirección'}</div>
                                     <div class="flex gap-2 mt-3">
                                         <button onclick="Views.profile.openEditModal('Contacto 2')" class="w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center"><i data-lucide="edit-2" class="w-3 h-3 text-[#fab720]"></i></button>
                                         <button onclick="Views.profile.simulateDelete('Contacto')" class="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center"><i data-lucide="trash" class="w-3 h-3 text-red-500"></i></button>
                                     </div>
                                 </div>
+                                ` : '<div class="text-sm text-slate-500 italic">No hay contacto secundario registrado.</div>'}
                             </div>
                         </div>
 
@@ -227,7 +237,7 @@ Views['profile'] = {
                             <h3 class="text-lg font-black text-[#032840] mb-8 border-b border-slate-100 pb-4">Detalles adicionales</h3>
                             <div>
                                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Status de discapacidad</label>
-                                <div class="text-sm font-bold text-slate-500 italic">Status no disponible</div>
+                                <div class="text-sm font-bold text-slate-500 italic">${metadata.discapacidad || 'Status no disponible'}</div>
                             </div>
                         </div>
 
@@ -274,13 +284,42 @@ Views['profile'] = {
     async savePersonalDetails() {
         const nuevoNombre = document.getElementById('edit-nombre').value;
         const nuevoApellido = document.getElementById('edit-apellido').value;
+        const nuevoSegundoNombre = document.getElementById('edit-segundo-nombre').value;
+        const nuevoNacimiento = document.getElementById('edit-nacimiento').value;
+        const nuevoEstadoCivil = document.getElementById('edit-civil').value;
+        const nuevoSexo = document.getElementById('edit-sexo').value;
+        const nuevoPreferido = document.getElementById('edit-preferido').value;
+        const nuevoGenero = document.getElementById('edit-genero').value;
 
         // Simular guardado real actualizando el objeto usuario en memoria (sessionStorage)
         const user = Auth.getUser();
         user.nombres = nuevoNombre;
         user.apellidos = nuevoApellido;
+        user.fecha_nacimiento = nuevoNacimiento;
+        
+        let metadata = {};
+        if (user.metadata) {
+            try {
+                metadata = typeof user.metadata === 'string' ? JSON.parse(user.metadata) : user.metadata;
+            } catch (e) {}
+        }
+        
+        metadata.segundo_nombre = nuevoSegundoNombre;
+        metadata.estado_civil = nuevoEstadoCivil;
+        metadata.sexo = nuevoSexo;
+        metadata.nombre_preferido = nuevoPreferido;
+        metadata.identificacion_genero = nuevoGenero;
+        
+        user.metadata = JSON.stringify(metadata);
 
         // En una app real esto sería un fetch al backend
+        // En este demo, vamos a hacer el llamado API si existe el endpoint de edición
+        try {
+            await API.put(`/admin/users/${user.id}`, user);
+        } catch(e) {
+            console.log('API update failed, updating local storage only', e);
+        }
+
         sessionStorage.setItem('user', JSON.stringify(user));
 
         Toast.success('¡Información personal actualizada con éxito!');
