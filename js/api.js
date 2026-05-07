@@ -22,7 +22,12 @@ const API = {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            // Clean endpoint and base URL to avoid double slashes
+            const cleanBase = API_BASE_URL.replace(/\/$/, '');
+            const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+            const url = `${cleanBase}${cleanEndpoint}`;
+
+            const response = await fetch(url, {
                 ...options,
                 headers
             });
