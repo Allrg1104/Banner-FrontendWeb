@@ -119,11 +119,138 @@ Views.teacher = {
                     </div>
                 </div>
 
-                <button onclick="Views.teacher.openCourse(${course.id}, '${course.materia}')" class="btn-premium btn-primary w-full py-3">
-                    Gestionar Calificaciones
-                </button>
+                <div class="flex gap-2">
+                    <button onclick="Views.teacher.openCourse(${course.id}, '${course.materia}')" class="btn-premium btn-primary flex-1 py-3 text-xs">
+                        Notas
+                    </button>
+                    <button onclick="Views.teacher.openAttendance(${course.id}, '${course.materia}', '${course.nrc}')" class="btn-premium btn-ghost flex-1 py-3 text-xs">
+                        Asistencias
+                    </button>
+                </div>
             </div>
         `).join('');
+    },
+
+    async openAttendance(courseId, courseName, nrc) {
+        this.state.selectedCourse = courseId;
+        this.state.selectedNRC = nrc;
+        
+        const modal = document.getElementById('grades-modal');
+        document.getElementById('modal-course-title').innerText = `Asistencia: ${courseName}`;
+        document.getElementById('modal-course-subtitle').innerText = `NRC: ${nrc} • Selecciona la fecha y marca la asistencia`;
+        modal.classList.remove('hidden');
+
+        const body = document.getElementById('students-list-body');
+        body.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-slate-400 italic">Cargando lista...</td></tr>`;
+
+        // Añadir selector de fecha al header del modal dinámicamente si no existe
+        let datePicker = document.getElementById('attendance-date-picker');
+        if (!datePicker) {
+            const header = document.querySelector('#grades-modal .p-8.border-b');
+            const div = document.createElement('div');
+            div.className = 'mt-4 flex items-center gap-2';
+            div.innerHTML = `
+                <span class="text-xs font-bold text-slate-400 uppercase">Fecha de Clase:</span>
+                <input type="date" id="attendance-date-picker" value="${new Date().toISOString().split('T')[0]}" 
+                       class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 text-sm font-bold text-indigo-600 outline-none">
+            `;
+            header.appendChild(div);
+            datePicker = document.getElementById('attendance-date-picker');
+        } else {
+            datePicker.parentElement.classList.remove('hidden');
+        }
+
+        try {
+            this.state.students = await API.get(`/teachers/courses/${courseId}/students`);
+            this.renderAttendanceList();
+        } catch (e) {
+            body.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-rose-500 font-bold">Error</td></tr>`;
+        }
+        lucide.createIcons();
+    },
+
+    renderAttendanceList() {
+        const body = document.getElementById('students-list-body');
+        const thead = document.querySelector('#grades-modal thead tr');
+        
+        // Ajustar cabecera para asistencia
+        thead.innerHTML = `
+            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Estudiante</th>
+            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Estado de Asistencia</th>
+            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Acción</th>
+        `;
+
+        body.innerHTML = this.state.students.map(s => `
+            <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">${s.nombres[0]}${s.apellidos[0]}</div>
+                        <div>
+                            <div class="text-sm font-bold text-slate-900">${s.nombres} ${s.apellidos}</div>
+                            <div class="text-[10px] text-indigo-600 font-black">ID: ${s.institutional_id}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="py-4 text-center">
+                    <div class="inline-flex bg-slate-100 p-1 rounded-xl gap-1">
+                        <button onclick="Views.teacher.markTempStatus('${s.institutional_id}', 'presente')" id="btn-p-${s.institutional_id}" class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all bg-white shadow-sm text-emerald-600">P</button>
+                        <button onclick="Views.teacher.markTempStatus('${s.institutional_id}', 'ausente_no_justificada')" id="btn-a-${s.institutional_id}" class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all text-slate-400">A</button>
+                        <button onclick="Views.teacher.markTempStatus('${s.institutional_id}', 'ausente_justificada')" id="btn-j-${s.institutional_id}" class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all text-slate-400">J</button>
+                    </div>
+                </td>
+                <td class="py-4 text-right">
+                    <button onclick="Views.teacher.saveSingleAttendance('${s.institutional_id}')" class="text-indigo-600 hover:text-indigo-800">
+                        <i data-lucide="check-circle" class="w-5 h-5"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        lucide.createIcons();
+    },
+
+    markTempStatus(studentId, status) {
+        // UI feedback local
+        const btns = {
+            'presente': document.getElementById(`btn-p-${studentId}`),
+            'ausente_no_justificada': document.getElementById(`btn-a-${studentId}`),
+            'ausente_justificada': document.getElementById(`btn-j-${studentId}`)
+        };
+        
+        Object.values(btns).forEach(b => {
+            b.classList.remove('bg-white', 'shadow-sm', 'text-emerald-600', 'text-rose-600', 'text-amber-600');
+            b.classList.add('text-slate-400');
+        });
+
+        const active = btns[status];
+        active.classList.remove('text-slate-400');
+        active.classList.add('bg-white', 'shadow-sm');
+        
+        if(status === 'presente') active.classList.add('text-emerald-600');
+        if(status === 'ausente_no_justificada') active.classList.add('text-rose-600');
+        if(status === 'ausente_justificada') active.classList.add('text-amber-600');
+
+        // Guardar estado en un objeto temporal si se desea guardar todo al final
+        this.state.tempAttendance = this.state.tempAttendance || {};
+        this.state.tempAttendance[studentId] = status;
+    },
+
+    async saveSingleAttendance(studentId) {
+        const status = this.state.tempAttendance?.[studentId] || 'presente';
+        const date = document.getElementById('attendance-date-picker').value;
+
+        try {
+            await API.post('/teachers/import-attendance', {
+                data: [{
+                    nrc: this.state.selectedNRC,
+                    student_id: studentId,
+                    status: status,
+                    date: date
+                }]
+            });
+            Toast.show('Asistencia guardada', 'success');
+        } catch (e) {
+            Toast.error('Error al guardar');
+        }
     },
 
     async openCourse(courseId, courseName) {
