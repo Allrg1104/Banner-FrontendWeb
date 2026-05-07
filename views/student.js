@@ -14,7 +14,7 @@ Views.student = {
             const [data, risk, per, act] = await Promise.all([
                 API.get(`/students/${user.id}/dashboard?periodoId=${selectedPeriodId}`),
                 API.get(`/risk/${user.id}`),
-                API.get('/students/periodos'),
+                API.get(`/students/${user.id}/periodos`),
                 API.get(`/students/${user.id}/activity`)
             ]);
             studentData = data;

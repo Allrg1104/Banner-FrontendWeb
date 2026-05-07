@@ -26,6 +26,7 @@ const API = {
             const cleanBase = API_BASE_URL.replace(/\/$/, '');
             const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
             const url = `${cleanBase}${cleanEndpoint}`;
+            console.log(`📡 [API DEBUG] Llamando a: ${url}`);
 
             const response = await fetch(url, {
                 ...options,

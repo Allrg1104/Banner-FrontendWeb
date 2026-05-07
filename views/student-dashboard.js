@@ -18,7 +18,7 @@ Views['student-dashboard'] = {
             // Pre-fetch data for the initial render
             const [data, per] = await Promise.all([
                 API.get(`/students/${user.id}/dashboard?periodoId=${selectedPeriodId}`),
-                API.get('/students/periodos')
+                API.get(`/students/${user.id}/periodos`)
             ]);
             studentData = data;
             periods = per;
