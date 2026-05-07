@@ -23,11 +23,18 @@ Views.teacher = {
                 <section class="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                         <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight">Panel Docente</h2>
-                        <p class="text-slate-500 mt-1">Gestión integral de tus cursos y calificaciones en tiempo real.</p>
+                        <p class="text-slate-500 mt-1">Gestión integral por NRC e ID Institucional.</p>
                     </div>
                     <div class="flex gap-3">
-                        <button class="btn-premium btn-ghost" onclick="Views.teacher.render()">
-                            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Actualizar
+                        <button class="btn-premium btn-ghost" onclick="Views.teacher.triggerImport('grades')">
+                            <i data-lucide="upload" class="w-4 h-4"></i> Importar Notas
+                        </button>
+                        <button class="btn-premium btn-ghost" onclick="Views.teacher.triggerImport('attendance')">
+                            <i data-lucide="calendar" class="w-4 h-4"></i> Importar Asistencias
+                        </button>
+                        <input type="file" id="bulk-import-input" class="hidden" accept=".csv">
+                        <button class="btn-premium btn-primary" onclick="Views.teacher.render()">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                         </button>
                     </div>
                 </section>
@@ -98,7 +105,7 @@ Views.teacher = {
                     <span class="badge badge-success">Activo</span>
                 </div>
                 <h3 class="text-xl font-black mb-1 text-slate-900">${course.materia}</h3>
-                <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mb-6">${course.codigo} • ${course.periodo}</p>
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mb-6">NRC: ${course.nrc} • ${course.codigo}</p>
                 
                 <div class="flex items-center gap-6 mb-8 text-slate-700">
                     <div>
@@ -154,7 +161,7 @@ Views.teacher = {
                             <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">${s.nombres[0]}${s.apellidos[0]}</div>
                             <div>
                                 <div class="text-sm font-bold text-slate-900">${s.nombres} ${s.apellidos}</div>
-                                <div class="text-[10px] text-slate-400 font-medium">${s.username}</div>
+                                <div class="text-[10px] text-indigo-600 font-black tracking-widest">ID: ${s.institutional_id}</div>
                             </div>
                         </div>
                     </td>
@@ -210,6 +217,59 @@ Views.teacher = {
 
     closeModal() {
         document.getElementById('grades-modal').classList.add('hidden');
+    },
+
+    triggerImport(type) {
+        const input = document.getElementById('bulk-import-input');
+        input.onchange = (e) => this.handleFile(e, type);
+        input.click();
+    },
+
+    async handleFile(e, type) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const text = event.target.result;
+            const rows = this.parseCSV(text);
+            
+            if (rows.length === 0) {
+                Toast.error('Archivo vacío o inválido');
+                return;
+            }
+
+            try {
+                Toast.info('Procesando carga masiva...');
+                const endpoint = type === 'grades' ? '/teachers/import-grades' : '/teachers/import-attendance';
+                const res = await API.post(endpoint, { data: rows });
+                
+                if (res.errors && res.errors.length > 0) {
+                    Toast.warning(`Cargados: ${res.success}. Errores: ${res.errors.length}`);
+                    console.error('Errores de importación:', res.errors);
+                } else {
+                    Toast.show(`Importación exitosa: ${res.success} registros`, 'success');
+                }
+                this.render();
+            } catch (err) {
+                Toast.error('Error en el servidor al importar');
+            }
+        };
+        reader.readAsText(file);
+    },
+
+    parseCSV(text) {
+        const lines = text.split('\n').filter(l => l.trim() !== '');
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        
+        return lines.slice(1).map(line => {
+            const values = line.split(',').map(v => v.trim());
+            const obj = {};
+            headers.forEach((h, i) => {
+                obj[h] = values[i];
+            });
+            return obj;
+        });
     },
 
     afterRender() {
