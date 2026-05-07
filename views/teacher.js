@@ -6,7 +6,10 @@ Views.teacher = {
     state: {
         courses: [],
         selectedCourse: null,
-        students: []
+        selectedNRC: null,
+        students: [],
+        tempGrades: {},
+        tempAttendance: {}
     },
 
     async render() {
@@ -51,12 +54,12 @@ Views.teacher = {
                     </div>
                 </div>
 
-                <!-- Modal de Calificaciones -->
+                <!-- Modal de Calificaciones y Asistencias -->
                 <div id="grades-modal" class="hidden fixed inset-0 z-[60] overflow-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
                     <div class="bg-white rounded-[32px] shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all animate-scale-up">
                         <div class="p-8 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
                             <div>
-                                <h3 id="modal-course-title" class="text-2xl font-black text-slate-900">Gestionar Calificaciones</h3>
+                                <h3 id="modal-course-title" class="text-2xl font-black text-slate-900">Gestionar Curso</h3>
                                 <p id="modal-course-subtitle" class="text-sm text-slate-500 font-medium"></p>
                             </div>
                             <button onclick="Views.teacher.closeModal()" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors">
@@ -68,12 +71,8 @@ Views.teacher = {
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left">
                                     <thead>
-                                        <tr class="border-b border-slate-100">
-                                            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Estudiante</th>
-                                            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Corte 1 (30%)</th>
-                                            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Corte 2 (30%)</th>
-                                            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Corte 3 (40%)</th>
-                                            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Definitiva</th>
+                                        <tr id="modal-table-header" class="border-b border-slate-100">
+                                            <!-- Cabecera dinámica -->
                                         </tr>
                                     </thead>
                                     <tbody id="students-list-body" class="divide-y divide-slate-50">
@@ -83,9 +82,9 @@ Views.teacher = {
                             </div>
                         </div>
 
-                        <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                        <div id="modal-footer" class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
                             <button onclick="Views.teacher.closeModal()" class="btn-premium btn-ghost">Cerrar</button>
-                            <button onclick="Views.teacher.closeModal()" class="btn-premium btn-primary px-8">Finalizar Sesión</button>
+                            <button id="btn-save-all" class="btn-premium btn-primary px-8 font-black uppercase text-xs tracking-widest">Guardar Todo</button>
                         </div>
                     </div>
                 </div>
@@ -98,9 +97,9 @@ Views.teacher = {
 
         return this.state.courses.map(course => `
             <div class="card-premium group">
-                <div class="flex justify-between items-start mb-6">
-                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                        <i data-lucide="book-open" class="w-6 h-6"></i>
+                <div class="flex items-center justify-between mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
+                        <i data-lucide="book" class="w-6 h-6"></i>
                     </div>
                     <span class="badge badge-success">Activo</span>
                 </div>
@@ -131,83 +130,143 @@ Views.teacher = {
         `).join('');
     },
 
-    async openAttendance(courseId, courseName, nrc) {
+    async openCourse(courseId, courseName) {
         this.state.selectedCourse = courseId;
-        this.state.selectedNRC = nrc;
-        
         const modal = document.getElementById('grades-modal');
-        document.getElementById('modal-course-title').innerText = `Asistencia: ${courseName}`;
-        document.getElementById('modal-course-subtitle').innerText = `NRC: ${nrc} • Selecciona la fecha y marca la asistencia`;
+        document.getElementById('modal-course-title').innerText = courseName;
+        document.getElementById('modal-course-subtitle').innerText = 'Gestión de Calificaciones por Corte';
         modal.classList.remove('hidden');
 
-        const body = document.getElementById('students-list-body');
-        body.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-slate-400 italic">Cargando lista...</td></tr>`;
+        const datePicker = document.getElementById('attendance-date-picker-div');
+        if (datePicker) datePicker.classList.add('hidden');
 
-        // Añadir selector de fecha al header del modal dinámicamente si no existe
-        let datePicker = document.getElementById('attendance-date-picker');
-        if (!datePicker) {
-            const header = document.querySelector('#grades-modal .p-8.border-b');
-            const div = document.createElement('div');
-            div.className = 'mt-4 flex items-center gap-2';
-            div.innerHTML = `
-                <div class="flex items-center gap-4">
-                    <span class="text-xs font-bold text-slate-400 uppercase">Fecha:</span>
-                    <input type="date" id="attendance-date-picker" value="${new Date().toISOString().split('T')[0]}" 
-                           onchange="Views.teacher.refreshAttendanceList()"
-                           class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 text-sm font-bold text-indigo-600 outline-none">
-                </div>
-                <button onclick="Views.teacher.openAttendanceReport()" class="btn-premium btn-ghost py-2 text-[10px]">
-                    <i data-lucide="table" class="w-3 h-3"></i> Reporte Completo
-                </button>
-            `;
-            header.appendChild(div);
-            datePicker = document.getElementById('attendance-date-picker');
-        } else {
-            datePicker.parentElement.classList.remove('hidden');
-        }
+        const btnSave = document.getElementById('btn-save-all');
+        btnSave.onclick = () => this.saveAllGrades();
+        btnSave.innerText = 'Guardar Todas las Notas';
+
+        const body = document.getElementById('students-list-body');
+        body.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-slate-400 italic">Cargando estudiantes...</td></tr>`;
 
         try {
             this.state.students = await API.get(`/teachers/courses/${courseId}/students`);
-            await this.refreshAttendanceList();
+            this.renderStudents();
         } catch (e) {
             body.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-rose-500 font-bold">Error</td></tr>`;
         }
         lucide.createIcons();
     },
 
-    async refreshAttendanceList() {
-        const date = document.getElementById('attendance-date-picker').value;
-        const courseId = this.state.selectedCourse;
+    renderStudents() {
+        const body = document.getElementById('students-list-body');
+        const header = document.getElementById('modal-table-header');
         
-        try {
-            // Obtener asistencias ya guardadas para esta fecha
-            const savedAttendance = await API.get(`/teachers/courses/${courseId}/attendance?date=${date}`);
-            
-            // Mapear a un objeto para fácil acceso
-            const attendanceMap = {};
-            savedAttendance.forEach(a => attendanceMap[a.student_id] = a.status);
-            
-            this.renderAttendanceList(attendanceMap);
-        } catch (e) {
-            Toast.error('Error al cargar asistencias del día');
-        }
+        header.innerHTML = `
+            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Estudiante</th>
+            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Corte 1 (30%)</th>
+            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Corte 2 (30%)</th>
+            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Corte 3 (40%)</th>
+            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Acción</th>
+        `;
+
+        body.innerHTML = this.state.students.map(s => `
+            <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">${s.nombres[0]}${s.apellidos[0]}</div>
+                        <div>
+                            <div class="text-sm font-bold text-slate-900">${s.nombres} ${s.apellidos}</div>
+                            <div class="text-[10px] text-indigo-600 font-black tracking-widest">ID: ${s.institutional_id}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="py-4 text-center">
+                    <input type="number" step="0.1" min="0" max="5" value="${s.grades['Corte 1'] || ''}" 
+                        class="w-16 text-center bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-slate-900 outline-none"
+                        onchange="Views.teacher.updateTempGrade(${s.matricula_id}, 'Corte 1', this.value)">
+                </td>
+                <td class="py-4 text-center">
+                    <input type="number" step="0.1" min="0" max="5" value="${s.grades['Corte 2'] || ''}" 
+                        class="w-16 text-center bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-slate-900 outline-none"
+                        onchange="Views.teacher.updateTempGrade(${s.matricula_id}, 'Corte 2', this.value)">
+                </td>
+                <td class="py-4 text-center">
+                    <input type="number" step="0.1" min="0" max="5" value="${s.grades['Corte 3'] || ''}" 
+                        class="w-16 text-center bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-slate-900 outline-none"
+                        onchange="Views.teacher.updateTempGrade(${s.matricula_id}, 'Corte 3', this.value)">
+                </td>
+                <td class="py-4 text-right">
+                    <button onclick="Views.teacher.saveGrades(${s.matricula_id})" class="text-emerald-600 p-2 hover:bg-emerald-50 rounded-lg">
+                        <i data-lucide="save" class="w-5 h-5"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        lucide.createIcons();
     },
 
-    renderAttendanceList(attendanceMap = {}) {
+    async openAttendance(courseId, courseName, nrc) {
+        this.state.selectedCourse = courseId;
+        this.state.selectedNRC = nrc;
+        const modal = document.getElementById('grades-modal');
+        document.getElementById('modal-course-title').innerText = `Asistencia: ${courseName}`;
+        document.getElementById('modal-course-subtitle').innerText = `NRC: ${nrc} • Pase de lista diario`;
+        modal.classList.remove('hidden');
+
+        const btnSave = document.getElementById('btn-save-all');
+        btnSave.onclick = () => this.saveAllAttendance();
+        btnSave.innerText = 'Guardar Toda la Asistencia';
+
+        let datePickerDiv = document.getElementById('attendance-date-picker-div');
+        if (!datePickerDiv) {
+            const header = document.querySelector('#grades-modal .p-8.border-b');
+            datePickerDiv = document.createElement('div');
+            datePickerDiv.id = 'attendance-date-picker-div';
+            datePickerDiv.className = 'mt-4 flex items-center gap-4';
+            datePickerDiv.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-black text-slate-400 uppercase">Fecha:</span>
+                    <input type="date" id="attendance-date-picker" value="${new Date().toISOString().split('T')[0]}" 
+                           onchange="Views.teacher.refreshAttendanceList()"
+                           class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 text-sm font-bold text-indigo-600 outline-none">
+                </div>
+                <button onclick="Views.teacher.openAttendanceReport()" class="btn-premium btn-ghost py-2 text-[10px]">
+                    <i data-lucide="table" class="w-3 h-3"></i> Sábana de Asistencias
+                </button>
+            `;
+            header.appendChild(datePickerDiv);
+        } else {
+            datePickerDiv.classList.remove('hidden');
+        }
+
+        try {
+            this.state.students = await API.get(`/teachers/courses/${courseId}/students`);
+            await this.refreshAttendanceList();
+        } catch (e) {
+            console.error(e);
+        }
+        lucide.createIcons();
+    },
+
+    async refreshAttendanceList() {
+        const date = document.getElementById('attendance-date-picker').value;
+        const res = await API.get(`/teachers/courses/${this.state.selectedCourse}/attendance?date=${date}`);
+        const map = {};
+        res.forEach(a => map[a.student_id] = a.status);
+        this.renderAttendanceList(map);
+    },
+
+    renderAttendanceList(map = {}) {
         const body = document.getElementById('students-list-body');
-        const thead = document.querySelector('#grades-modal thead tr');
-        
-        thead.innerHTML = `
+        const header = document.getElementById('modal-table-header');
+        header.innerHTML = `
             <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Estudiante</th>
-            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Estado de Asistencia</th>
+            <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Estado</th>
             <th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Acción</th>
         `;
 
         body.innerHTML = this.state.students.map(s => {
-            const status = attendanceMap[s.institutional_id] || 'presente';
-            this.state.tempAttendance = this.state.tempAttendance || {};
+            const status = map[s.institutional_id] || 'presente';
             this.state.tempAttendance[s.institutional_id] = status;
-
             return `
                 <tr class="hover:bg-slate-50/50 transition-colors">
                     <td class="py-4">
@@ -230,7 +289,7 @@ Views.teacher = {
                         </div>
                     </td>
                     <td class="py-4 text-right">
-                        <button onclick="Views.teacher.saveSingleAttendance('${s.institutional_id}')" class="text-indigo-600 hover:text-indigo-800">
+                        <button onclick="Views.teacher.saveSingleAttendance('${s.institutional_id}')" class="text-indigo-600 p-2">
                             <i data-lucide="check-circle" class="w-5 h-5"></i>
                         </button>
                     </td>
@@ -240,244 +299,128 @@ Views.teacher = {
         lucide.createIcons();
     },
 
-    async openAttendanceReport() {
-        const courseId = this.state.selectedCourse;
-        const body = document.getElementById('students-list-body');
-        const thead = document.querySelector('#grades-modal thead tr');
-        
-        body.innerHTML = `<tr><td colspan="10" class="py-20 text-center text-slate-400 italic">Generando sábana de asistencias...</td></tr>`;
-
-        try {
-            const report = await API.get(`/teachers/courses/${courseId}/attendance-report`);
-            
-            // Renderizar cabecera con fechas
-            let headerHtml = `<th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest sticky left-0 bg-white z-10">Estudiante</th>`;
-            report.dates.forEach(date => {
-                headerHtml += `<th class="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center min-w-[60px]">${date.split('-').slice(1).join('/')}</th>`;
-            });
-            thead.innerHTML = headerHtml;
-
-            // Renderizar filas
-            body.innerHTML = report.students.map(s => `
-                <tr class="hover:bg-slate-50/50 transition-colors">
-                    <td class="py-3 sticky left-0 bg-white/90 backdrop-blur-sm z-10 border-r border-slate-100">
-                        <div class="text-xs font-bold text-slate-900">${s.name}</div>
-                        <div class="text-[9px] text-slate-400 font-black">${s.student_id}</div>
-                    </td>
-                    ${report.dates.map(date => {
-                        const rec = s.history.find(h => h.fecha === date);
-                        let color = 'bg-slate-100 text-slate-300';
-                        let label = '-';
-                        if (rec) {
-                            if (rec.tipo === 'presente') { color = 'bg-emerald-100 text-emerald-600'; label = 'P'; }
-                            if (rec.tipo === 'ausente_no_justificada') { color = 'bg-rose-100 text-rose-600'; label = 'A'; }
-                            if (rec.tipo === 'ausente_justificada') { color = 'bg-amber-100 text-amber-600'; label = 'J'; }
-                        }
-                        return `<td class="py-3 text-center">
-                            <span class="w-6 h-6 inline-flex items-center justify-center rounded-md text-[10px] font-black ${color}">${label}</span>
-                        </td>`;
-                    }).join('')}
-                </tr>
-            `).join('');
-
-        } catch (e) {
-            Toast.error('Error al generar el reporte');
-        }
-    },
-
-    markTempStatus(studentId, status) {
-        // UI feedback local
-        const btns = {
-            'presente': document.getElementById(`btn-p-${studentId}`),
-            'ausente_no_justificada': document.getElementById(`btn-a-${studentId}`),
-            'ausente_justificada': document.getElementById(`btn-j-${studentId}`)
-        };
-        
-        Object.values(btns).forEach(b => {
-            b.classList.remove('bg-white', 'shadow-sm', 'text-emerald-600', 'text-rose-600', 'text-amber-600');
-            b.classList.add('text-slate-400');
-        });
-
-        const active = btns[status];
-        active.classList.remove('text-slate-400');
-        active.classList.add('bg-white', 'shadow-sm');
-        
-        if(status === 'presente') active.classList.add('text-emerald-600');
-        if(status === 'ausente_no_justificada') active.classList.add('text-rose-600');
-        if(status === 'ausente_justificada') active.classList.add('text-amber-600');
-
-        // Guardar estado en un objeto temporal si se desea guardar todo al final
-        this.state.tempAttendance = this.state.tempAttendance || {};
-        this.state.tempAttendance[studentId] = status;
-    },
-
-    async saveSingleAttendance(studentId) {
-        const status = this.state.tempAttendance?.[studentId] || 'presente';
+    async saveAllAttendance() {
         const date = document.getElementById('attendance-date-picker').value;
-
+        const data = this.state.students.map(s => ({
+            nrc: this.state.selectedNRC,
+            student_id: s.institutional_id,
+            status: this.state.tempAttendance[s.institutional_id] || 'presente',
+            date: date
+        }));
         try {
-            await API.post('/teachers/import-attendance', {
-                data: [{
-                    nrc: this.state.selectedNRC,
-                    student_id: studentId,
-                    status: status,
-                    date: date
-                }]
-            });
-            Toast.show('Asistencia guardada', 'success');
+            await API.post('/teachers/import-attendance', { data });
+            Toast.show('Asistencia guardada con éxito', 'success');
         } catch (e) {
             Toast.error('Error al guardar');
         }
     },
 
-    async openCourse(courseId, courseName) {
-        this.state.selectedCourse = courseId;
-        document.getElementById('modal-course-title').innerText = courseName;
-        document.getElementById('modal-course-subtitle').innerText = 'Gestión de calificaciones por corte académico';
-        document.getElementById('grades-modal').classList.remove('hidden');
-        
-        const body = document.getElementById('students-list-body');
-        body.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-slate-400 italic">Cargando lista de estudiantes...</td></tr>`;
-
-        try {
-            this.state.students = await API.get(`/teachers/courses/${courseId}/students`);
-            this.renderStudents();
-        } catch (e) {
-            body.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-rose-500 font-bold">Error al cargar estudiantes</td></tr>`;
-        }
-        
-        lucide.createIcons();
-    },
-
-    renderStudents() {
-        const body = document.getElementById('students-list-body');
-        if (!this.state.students.length) {
-            body.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-slate-400 italic">No hay estudiantes matriculados en este curso.</td></tr>`;
-            return;
-        }
-
-        body.innerHTML = this.state.students.map(s => {
-            const def = ((s.grades['Corte 1'] || 0) * 0.3 + (s.grades['Corte 2'] || 0) * 0.3 + (s.grades['Corte 3'] || 0) * 0.4).toFixed(2);
-            return `
-                <tr class="hover:bg-slate-50/50 transition-colors">
-                    <td class="py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">${s.nombres[0]}${s.apellidos[0]}</div>
-                            <div>
-                                <div class="text-sm font-bold text-slate-900">${s.nombres} ${s.apellidos}</div>
-                                <div class="text-[10px] text-indigo-600 font-black tracking-widest">ID: ${s.institutional_id}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="py-4 text-center">
-                        <input type="number" step="0.1" min="0" max="5" value="${s.grades['Corte 1'] || ''}" 
-                               onchange="Views.teacher.updateGrade(${s.matricula_id}, 'Corte 1', this.value)"
-                               class="w-16 p-2 bg-slate-50 border border-slate-100 rounded-lg text-center font-bold text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
-                    </td>
-                    <td class="py-4 text-center">
-                        <input type="number" step="0.1" min="0" max="5" value="${s.grades['Corte 2'] || ''}" 
-                               onchange="Views.teacher.updateGrade(${s.matricula_id}, 'Corte 2', this.value)"
-                               class="w-16 p-2 bg-slate-50 border border-slate-100 rounded-lg text-center font-bold text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
-                    </td>
-                    <td class="py-4 text-center">
-                        <input type="number" step="0.1" min="0" max="5" value="${s.grades['Corte 3'] || ''}" 
-                               onchange="Views.teacher.updateGrade(${s.matricula_id}, 'Corte 3', this.value)"
-                               class="w-16 p-2 bg-slate-50 border border-slate-100 rounded-lg text-center font-bold text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
-                    </td>
-                    <td class="py-4 text-center">
-                        <span class="text-lg font-black ${def >= 3 ? 'text-emerald-600' : 'text-rose-600'}">${def}</span>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    },
-
-    async updateGrade(matriculaId, corte, value) {
-        if (value < 0 || value > 5) {
-            Toast.error('La nota debe estar entre 0.0 y 5.0');
-            return;
-        }
-
-        try {
-            const res = await API.post('/teachers/update-grade', {
-                matricula_id: matriculaId,
-                componente: corte,
-                valor: parseFloat(value)
-            });
-
-            if (res.success) {
-                Toast.show('Nota guardada', 'success');
-                // Actualizar estado local para recalcular definitiva
-                const student = this.state.students.find(s => s.matricula_id === matriculaId);
-                if (student) {
-                    student.grades[corte] = parseFloat(value);
-                    this.renderStudents();
-                }
+    async saveAllGrades() {
+        const allPromises = [];
+        for (const [mId, grades] of Object.entries(this.state.tempGrades)) {
+            for (const [comp, val] of Object.entries(grades)) {
+                allPromises.push(API.post('/teachers/update-grade', { matricula_id: mId, componente: comp, valor: val }));
             }
-        } catch (e) {
-            Toast.error('Error al guardar la nota');
         }
+        try {
+            if (allPromises.length === 0) return Toast.show('No hay cambios pendientes', 'info');
+            await Promise.all(allPromises);
+            Toast.show('Todas las notas se han guardado correctamente', 'success');
+            this.state.tempGrades = {};
+        } catch (e) {
+            Toast.error('Error al guardar notas masivas');
+        }
+    },
+
+    updateTempGrade(mId, comp, val) {
+        this.state.tempGrades[mId] = this.state.tempGrades[mId] || {};
+        this.state.tempGrades[mId][comp] = val;
+    },
+
+    async saveGrades(mId) {
+        const grades = this.state.tempGrades[mId];
+        if (!grades) return Toast.show('Sin cambios', 'info');
+        try {
+            for (const [comp, val] of Object.entries(grades)) {
+                await API.post('/teachers/update-grade', { matricula_id: mId, componente: comp, valor: val });
+            }
+            Toast.show('Notas de estudiante guardadas', 'success');
+            delete this.state.tempGrades[mId];
+        } catch (e) {
+            Toast.error('Error');
+        }
+    },
+
+    markTempStatus(sId, status) {
+        this.state.tempAttendance[sId] = status;
+        this.renderAttendanceList(this.state.tempAttendance);
+    },
+
+    async saveSingleAttendance(sId) {
+        const date = document.getElementById('attendance-date-picker').value;
+        try {
+            await API.post('/teachers/import-attendance', {
+                data: [{ nrc: this.state.selectedNRC, student_id: sId, status: this.state.tempAttendance[sId], date }]
+            });
+            Toast.show('Asistencia guardada', 'success');
+        } catch (e) {
+            Toast.error('Error');
+        }
+    },
+
+    async openAttendanceReport() {
+        const res = await API.get(`/teachers/courses/${this.state.selectedCourse}/attendance-report`);
+        const header = document.getElementById('modal-table-header');
+        const body = document.getElementById('students-list-body');
+
+        let headerHtml = `<th class="pb-4 text-[10px] font-black text-slate-400 uppercase sticky left-0 bg-white">Estudiante</th>`;
+        res.dates.forEach(d => {
+            headerHtml += `<th class="pb-4 text-[10px] font-black text-slate-400 uppercase text-center min-w-[60px]">${d.split('-').slice(1).join('/')}</th>`;
+        });
+        header.innerHTML = headerHtml;
+
+        body.innerHTML = res.students.map(s => `
+            <tr>
+                <td class="py-3 sticky left-0 bg-white/90 backdrop-blur-sm z-10 font-bold text-xs">${s.name}</td>
+                ${res.dates.map(d => {
+                    const rec = s.history.find(h => h.fecha === d);
+                    let cls = 'bg-slate-100 text-slate-300';
+                    let lbl = '-';
+                    if (rec) {
+                        if (rec.tipo === 'presente') { cls = 'bg-emerald-100 text-emerald-600'; lbl = 'P'; }
+                        if (rec.tipo === 'ausente_no_justificada') { cls = 'bg-rose-100 text-rose-600'; lbl = 'A'; }
+                        if (rec.tipo === 'ausente_justificada') { cls = 'bg-amber-100 text-amber-600'; lbl = 'J'; }
+                    }
+                    return `<td class="text-center"><span class="w-6 h-6 inline-flex items-center justify-center rounded text-[10px] font-black ${cls}">${lbl}</span></td>`;
+                }).join('')}
+            </tr>
+        `).join('');
     },
 
     closeModal() {
         document.getElementById('grades-modal').classList.add('hidden');
+        this.state.tempGrades = {};
+        this.state.tempAttendance = {};
     },
 
     triggerImport(type) {
         const input = document.getElementById('bulk-import-input');
-        input.onchange = (e) => this.handleFile(e, type);
-        input.click();
-    },
-
-    async handleFile(e, type) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const text = event.target.result;
-            const rows = this.parseCSV(text);
-            
-            if (rows.length === 0) {
-                Toast.error('Archivo vacío o inválido');
-                return;
-            }
-
-            try {
-                Toast.info('Procesando carga masiva...');
-                const endpoint = type === 'grades' ? '/teachers/import-grades' : '/teachers/import-attendance';
-                const res = await API.post(endpoint, { data: rows });
-                
-                if (res.errors && res.errors.length > 0) {
-                    Toast.warning(`Cargados: ${res.success}. Errores: ${res.errors.length}`);
-                    console.error('Errores de importación:', res.errors);
-                } else {
-                    Toast.show(`Importación exitosa: ${res.success} registros`, 'success');
-                }
-                this.render();
-            } catch (err) {
-                Toast.error('Error en el servidor al importar');
-            }
-        };
-        reader.readAsText(file);
-    },
-
-    parseCSV(text) {
-        const lines = text.split('\n').filter(l => l.trim() !== '');
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        
-        return lines.slice(1).map(line => {
-            const values = line.split(',').map(v => v.trim());
-            const obj = {};
-            headers.forEach((h, i) => {
-                obj[h] = values[i];
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            const text = await file.text();
+            const lines = text.split('\n').filter(l => l.trim());
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const rows = lines.slice(1).map(l => {
+                const vals = l.split(',');
+                const obj = {};
+                headers.forEach((h, i) => obj[h] = vals[i].trim());
+                return obj;
             });
-            return obj;
-        });
-    },
-
-    afterRender() {
-        lucide.createIcons();
+            const endpoint = type === 'grades' ? '/teachers/import-grades' : '/teachers/import-attendance';
+            const res = await API.post(endpoint, { data: rows });
+            Toast.show(`Importación exitosa: ${res.success} registros`, 'success');
+            this.render();
+        };
+        input.click();
     }
 };
-
