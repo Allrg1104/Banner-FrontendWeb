@@ -1,5 +1,5 @@
 /**
- * Student Dashboard View - Analytical Intelligence
+ * Student Dashboard View - Analytical Intelligence (v18)
  * Visualizes academic progress and trends using Chart.js
  */
 
@@ -26,14 +26,14 @@ Views['student-dashboard'] = {
             console.error('Initial load error', e);
         }
 
-        const activePeriod = periods?.find(p => selectedPeriodId ? p.id == selectedPeriodId : p.activo === 1) || periods?.[0] || { nombre: 'Cargando...' };
+        const activePeriod = periods?.find(p => selectedPeriodId ? p.id == selectedPeriodId : p.activo === 1) || periods?.[0] || { nombre: 'Sin Datos' };
 
         return `
             <div class="space-y-8 animate-fade-in">
                 <!-- Dashboard Header -->
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h2 class="text-3xl font-black text-slate-900 tracking-tight">Panel Académico Dinámico</h2>
+                        <h2 class="text-3xl font-black text-slate-900 tracking-tight">Panel Académico Dinámico (v18)</h2>
                         <p class="text-slate-500 font-medium">Visualiza tu rendimiento y evolución histórica</p>
                     </div>
                     <div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
@@ -182,4 +182,3 @@ Views['student-dashboard'] = {
         });
     }
 };
-
