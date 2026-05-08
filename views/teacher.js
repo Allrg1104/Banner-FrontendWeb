@@ -5,6 +5,7 @@
 Views.teacher = {
     state: {
         courses: [],
+        analytics: { stats: {}, riskList: [] },
         selectedCourse: null,
         selectedNRC: null,
         students: [],
@@ -14,47 +15,89 @@ Views.teacher = {
 
     async render() {
         try {
-            this.state.courses = await API.get('/teachers/my-courses');
+            // Cargar cursos y analíticas en paralelo
+            const [courses, analytics] = await Promise.all([
+                API.get('/teachers/my-courses'),
+                API.get('/teachers/dashboard-analytics')
+            ]);
+            this.state.courses = courses;
+            this.state.analytics = analytics;
         } catch (e) {
-            console.error('Error loading courses', e);
+            console.error('Error loading teacher data', e);
         }
 
+        const stats = this.state.analytics.stats || { totalStudents: 0, atRiskCount: 0, averageGlobal: '0.0' };
+
         return `
-            <div class="space-y-10 animate-fade-in">
+            <div class="space-y-10 animate-fade-in pb-20">
                 
                 <!-- Header Section -->
                 <section class="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight">Panel Docente</h2>
-                        <p class="text-slate-500 mt-1">Gestión integral por NRC e ID Institucional.</p>
+                        <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight">Dashboard Académico</h2>
+                        <p class="text-slate-500 mt-1">Monitoreo de rendimiento y alertas de riesgo en tiempo real.</p>
                     </div>
                     <div class="flex gap-3">
                         <button class="btn-premium btn-ghost" onclick="Views.teacher.triggerImport('grades')">
                             <i data-lucide="upload" class="w-4 h-4"></i> Importar Notas
                         </button>
-                        <button class="btn-premium btn-ghost" onclick="Views.teacher.triggerImport('attendance')">
-                            <i data-lucide="calendar" class="w-4 h-4"></i> Importar Asistencias
-                        </button>
-                        <input type="file" id="bulk-import-input" class="hidden" accept=".csv">
                         <button class="btn-premium btn-primary" onclick="Views.teacher.render()">
                             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                         </button>
                     </div>
                 </section>
 
-                <!-- Courses Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    ${this.renderCourses()}
-                    
-                    <div class="card-premium group border-dashed border-slate-200 bg-slate-50/50 shadow-none hover:shadow-none flex flex-col items-center justify-center py-12">
-                        <div class="w-16 h-16 rounded-full bg-slate-200/50 flex items-center justify-center mb-4">
-                            <i data-lucide="plus" class="w-8 h-8 text-slate-400"></i>
+                <!-- KPI Metrics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="card-premium bg-white p-8 border-l-4 border-indigo-600">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                                <i data-lucide="users" class="w-6 h-6"></i>
+                            </div>
                         </div>
-                        <p class="text-slate-400 font-bold text-sm">Solicitar Nuevo Curso</p>
+                        <div class="text-3xl font-black text-slate-900">${stats.totalStudents}</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Estudiantes Totales</div>
+                    </div>
+
+                    <div class="card-premium bg-white p-8 border-l-4 ${stats.atRiskCount > 0 ? 'border-rose-600' : 'border-emerald-600'}">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 ${stats.atRiskCount > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'} rounded-2xl">
+                                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                            </div>
+                            <span class="text-[10px] font-black uppercase ${stats.atRiskCount > 0 ? 'text-rose-500' : 'text-emerald-500'}">
+                                ${stats.atRiskCount > 0 ? 'Requiere Atención' : 'Sin Alertas'}
+                            </span>
+                        </div>
+                        <div class="text-3xl font-black text-slate-900">${stats.atRiskCount}</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Estudiantes en Riesgo</div>
+                    </div>
+
+                    <div class="card-premium bg-white p-8 border-l-4 border-indigo-600">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                                <i data-lucide="trending-up" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-black text-slate-900">${stats.averageGlobal}</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Promedio General</div>
                     </div>
                 </div>
 
-                <!-- Modal de Calificaciones y Asistencias -->
+                <!-- Risk Alerts Section -->
+                ${this.renderRiskSection()}
+
+                <!-- Courses Grid Section -->
+                <div class="space-y-6">
+                    <div class="flex items-center gap-4">
+                        <h3 class="text-xl font-black text-slate-900">Mis Asignaturas</h3>
+                        <div class="h-px flex-grow bg-slate-100"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        ${this.renderCourses()}
+                    </div>
+                </div>
+
+                <!-- Modals -->
                 <div id="grades-modal" class="hidden fixed inset-0 z-[60] overflow-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
                     <div class="bg-white rounded-[32px] shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all animate-scale-up">
                         <div class="p-8 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
@@ -71,13 +114,9 @@ Views.teacher = {
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left">
                                     <thead>
-                                        <tr id="modal-table-header" class="border-b border-slate-100">
-                                            <!-- Cabecera dinámica -->
-                                        </tr>
+                                        <tr id="modal-table-header" class="border-b border-slate-100"></tr>
                                     </thead>
-                                    <tbody id="students-list-body" class="divide-y divide-slate-50">
-                                        <!-- Estudiantes se cargarán aquí -->
-                                    </tbody>
+                                    <tbody id="students-list-body" class="divide-y divide-slate-50"></tbody>
                                 </table>
                             </div>
                         </div>
@@ -92,6 +131,78 @@ Views.teacher = {
                     </div>
                 </div>
             </div>
+        `;
+    },
+
+    renderRiskSection() {
+        const riskList = this.state.analytics.riskList || [];
+        if (!riskList.length) return '';
+
+        return `
+            <section class="card-premium bg-white p-8 border-none shadow-xl shadow-slate-100 ring-1 ring-slate-100">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-900">Seguimiento de Riesgo Académico</h3>
+                        <p class="text-xs text-rose-500 font-bold uppercase tracking-widest mt-1">Estudiantes con alertas por inasistencia o bajo rendimiento</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="badge badge-error">${riskList.filter(r => r.level === 'critical').length} Críticos</span>
+                        <span class="badge badge-warning">${riskList.filter(r => r.level === 'warning').length} Advertencias</span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <th class="pb-4">Estudiante</th>
+                                <th class="pb-4">Asignatura / NRC</th>
+                                <th class="pb-4">Motivo del Riesgo</th>
+                                <th class="pb-4 text-center">Promedio</th>
+                                <th class="pb-4 text-center">Fallas</th>
+                                <th class="pb-4 text-right">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            ${riskList.map(r => `
+                                <tr class="hover:bg-slate-50/50 transition-colors group">
+                                    <td class="py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500">
+                                                ${r.name[0]}
+                                            </div>
+                                            <div>
+                                                <div class="text-sm font-bold text-slate-900">${r.name}</div>
+                                                <div class="text-[10px] text-indigo-600 font-black">ID: ${r.id}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4">
+                                        <div class="text-xs font-bold text-slate-700">${r.subject}</div>
+                                        <div class="text-[10px] text-slate-400 font-medium">NRC: ${r.nrc}</div>
+                                    </td>
+                                    <td class="py-4">
+                                        <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tight ${r.level === 'critical' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'}">
+                                            ${r.reason}
+                                        </span>
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <span class="text-sm font-black ${parseFloat(r.avg) < 3 ? 'text-rose-600' : 'text-slate-900'}">${r.avg}</span>
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <span class="text-sm font-black ${r.absences > 3 ? 'text-rose-600' : 'text-slate-900'}">${r.absences}</span>
+                                    </td>
+                                    <td class="py-4 text-right">
+                                        <button onclick="Views.teacher.openCourseByNRC('${r.nrc}', '${r.subject}')" class="btn-premium btn-ghost text-[10px] py-2">
+                                            Ver Curso
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         `;
     },
 
@@ -133,15 +244,19 @@ Views.teacher = {
         `).join('');
     },
 
+    async openCourseByNRC(nrc, subject) {
+        const course = this.state.courses.find(c => c.nrc == nrc);
+        if (course) {
+            this.openCourse(course.id, subject);
+        }
+    },
+
     async openCourse(courseId, courseName) {
         this.state.selectedCourse = courseId;
         const modal = document.getElementById('grades-modal');
         document.getElementById('modal-course-title').innerText = courseName;
         document.getElementById('modal-course-subtitle').innerText = 'Gestión de Calificaciones por Corte';
         modal.classList.remove('hidden');
-
-        const datePicker = document.getElementById('attendance-date-picker-div');
-        if (datePicker) datePicker.classList.add('hidden');
 
         const btnPrint = document.getElementById('btn-print-report');
         if (btnPrint) btnPrint.classList.remove('hidden');
@@ -178,7 +293,7 @@ Views.teacher = {
             <tr class="hover:bg-slate-50/50 transition-colors">
                 <td class="py-4">
                     <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">${s.nombres[0]}${s.apellidos[0]}</div>
+                        <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">${s.nombres[0]}</div>
                         <div>
                             <div class="text-sm font-bold text-slate-900">${s.nombres} ${s.apellidos}</div>
                             <div class="text-[10px] text-indigo-600 font-black tracking-widest">ID: ${s.institutional_id}</div>
@@ -268,93 +383,31 @@ Views.teacher = {
             <head>
                 <title>Acta de Notas - ${course.materia}</title>
                 <script src="https://cdn.tailwindcss.com"></script>
-                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
                 <style>
-                    body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; }
+                    body { font-family: 'Inter', sans-serif; padding: 40px; }
                     @media print { .no-print { display: none; } }
                     table { border-collapse: collapse; width: 100%; }
-                    th, td { border: 1px solid #e2e8f0; padding: 12px; font-size: 10px; }
-                    th { background-color: #f8fafc; text-transform: uppercase; letter-spacing: 0.05em; }
+                    th, td { border: 1px solid #e2e8f0; padding: 10px; font-size: 10px; }
                 </style>
             </head>
             <body>
-                <div class="max-w-6xl mx-auto border-2 border-slate-900 p-10 rounded-xl">
-                    <div class="flex justify-between items-center mb-10 pb-6 border-b-2 border-slate-900">
-                        <div>
-                            <h1 class="text-3xl font-black uppercase text-slate-900">Unicatólica</h1>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em]">Acta Oficial de Calificaciones</p>
-                        </div>
-                        <div class="text-right">
-                            <div class="bg-slate-900 text-white px-4 py-2 rounded-lg inline-block font-black text-sm mb-1">NRC: ${course.nrc}</div>
-                            <p class="text-[9px] font-bold text-slate-400 italic">${new Date().toLocaleString()}</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-6 mb-10 text-[10px] uppercase font-black">
-                        <div class="border-l-4 border-indigo-600 pl-4">
-                            <span class="text-slate-400 block mb-1">Asignatura</span>
-                            <span class="text-slate-900">${course.materia} (${course.codigo})</span>
-                        </div>
-                        <div class="border-l-4 border-indigo-600 pl-4">
-                            <span class="text-slate-400 block mb-1">Docente Responsable</span>
-                            <span class="text-slate-900">${teacher.nombres} ${teacher.apellidos}</span>
-                        </div>
-                        <div class="border-l-4 border-indigo-600 pl-4">
-                            <span class="text-slate-400 block mb-1">Periodo / Sede</span>
-                            <span class="text-slate-900">2025-II / SEDE PANCE</span>
-                        </div>
-                    </div>
-
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID Estudiante</th>
-                                <th>Nombre Completo</th>
-                                <th class="text-center">C1 (30%)</th>
-                                <th class="text-center">C2 (30%)</th>
-                                <th class="text-center">C3 (40%)</th>
-                                <th class="text-center bg-indigo-50 text-indigo-900">Definitiva</th>
-                                <th class="text-center">Asist. %</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${students.map(s => {
-                                const c1 = s.grades['Corte 1'] || 0;
-                                const c2 = s.grades['Corte 2'] || 0;
-                                const c3 = s.grades['Corte 3'] || 0;
-                                const def = (c1 * 0.3 + c2 * 0.3 + c3 * 0.4).toFixed(2);
-                                return `
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="font-mono text-indigo-600 font-bold">${s.institutional_id}</td>
-                                        <td class="font-black text-slate-900">${s.nombres} ${s.apellidos}</td>
-                                        <td class="text-center font-bold">${c1}</td>
-                                        <td class="text-center font-bold">${c2}</td>
-                                        <td class="text-center font-bold">${c3}</td>
-                                        <td class="text-center font-black bg-indigo-50/50 text-indigo-700">${def}</td>
-                                        <td class="text-center font-bold ${s.asistencia?.porcentaje < 70 ? 'text-rose-600' : 'text-emerald-600'}">${s.asistencia?.porcentaje || 0}%</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-
-                    <div class="mt-24 grid grid-cols-2 gap-20 px-10">
-                        <div class="text-center border-t-2 border-slate-900 pt-4">
-                            <p class="text-xs font-black uppercase">${teacher.nombres} ${teacher.apellidos}</p>
-                            <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1">Firma del Docente Titular</p>
-                        </div>
-                        <div class="text-center border-t-2 border-slate-900 pt-4">
-                            <p class="text-xs font-black uppercase">Secretaría Académica</p>
-                            <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1">Sello y Firma de Validación</p>
-                        </div>
-                    </div>
-
-                    <div class="mt-20 flex justify-center no-print">
-                        <button onclick="window.print()" class="bg-slate-900 text-white px-12 py-4 rounded-full font-black uppercase text-xs tracking-[0.2em] shadow-2xl hover:scale-105 transition-all">
-                            Emitir Reporte Oficial
-                        </button>
-                    </div>
-                </div>
+                <h1 class="text-2xl font-black mb-4">Acta Oficial de Notas</h1>
+                <p>Curso: ${course.materia} | Docente: ${teacher.nombres} ${teacher.apellidos}</p>
+                <table class="mt-8">
+                    <thead>
+                        <tr><th>ID</th><th>Nombre</th><th>C1</th><th>C2</th><th>C3</th><th>Def</th></tr>
+                    </thead>
+                    <tbody>
+                        ${students.map(s => {
+                            const c1 = s.grades['Corte 1'] || 0;
+                            const c2 = s.grades['Corte 2'] || 0;
+                            const c3 = s.grades['Corte 3'] || 0;
+                            const def = (c1*0.3 + c2*0.3 + c3*0.4).toFixed(2);
+                            return `<tr><td>${s.institutional_id}</td><td>${s.nombres} ${s.apellidos}</td><td>${c1}</td><td>${c2}</td><td>${c3}</td><td>${def}</td></tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+                <button onclick="window.print()" class="no-print mt-10 bg-indigo-600 text-white px-8 py-3 rounded-lg font-bold">Imprimir</button>
             </body>
             </html>
         `);
@@ -385,7 +438,7 @@ Views.teacher = {
                 <tr class="hover:bg-slate-50/50 transition-colors">
                     <td class="py-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">${s.nombres[0]}${s.apellidos[0]}</div>
+                            <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">${s.nombres[0]}</div>
                             <div>
                                 <div class="text-sm font-bold text-slate-900">${s.nombres} ${s.apellidos}</div>
                                 <div class="text-[10px] text-indigo-600 font-black">ID: ${s.institutional_id}</div>
@@ -394,12 +447,12 @@ Views.teacher = {
                     </td>
                     <td class="py-4 text-center">
                         <div class="inline-flex bg-slate-100 p-1 rounded-xl gap-1">
-                            <button onclick="Views.teacher.markTempStatus('${s.institutional_id}', 'presente')" id="btn-p-${s.institutional_id}" 
-                                class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${status === 'presente' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400'}">P</button>
-                            <button onclick="Views.teacher.markTempStatus('${s.institutional_id}', 'ausente_no_justificada')" id="btn-a-${s.institutional_id}" 
-                                class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${status === 'ausente_no_justificada' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-400'}">A</button>
-                            <button onclick="Views.teacher.markTempStatus('${s.institutional_id}', 'ausente_justificada')" id="btn-j-${s.institutional_id}" 
-                                class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${status === 'ausente_justificada' ? 'bg-white shadow-sm text-amber-600' : 'text-slate-400'}">J</button>
+                            <button onclick="Views.teacher.markTempStatus('${s.institutional_id}', 'presente')" 
+                                class="px-4 py-1.5 rounded-lg text-[10px] font-black transition-all ${status === 'presente' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400'}">P</button>
+                            <button onclick="Views.teacher.markTempStatus('${s.institutional_id}', 'ausente_no_justificada')" 
+                                class="px-4 py-1.5 rounded-lg text-[10px] font-black transition-all ${status === 'ausente_no_justificada' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-400'}">A</button>
+                            <button onclick="Views.teacher.markTempStatus('${s.institutional_id}', 'ausente_justificada')" 
+                                class="px-4 py-1.5 rounded-lg text-[10px] font-black transition-all ${status === 'ausente_justificada' ? 'bg-white shadow-sm text-amber-600' : 'text-slate-400'}">J</button>
                         </div>
                     </td>
                     <td class="py-4 text-right">
