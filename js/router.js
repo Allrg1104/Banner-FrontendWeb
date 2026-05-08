@@ -44,7 +44,7 @@ const Router = {
 
         const dashboardMap = {
             'estudiante': '/dashboard',
-            'docente': '/teacher',
+            'docente': '/teacher-dashboard',
             'director': '/director',
             'decano': '/director',
             'registro': '/registro',

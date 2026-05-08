@@ -127,6 +127,7 @@ const Layout = {
         const routes = {
             '#/': 'Resumen General',
             '#/student': 'Mi Perfil Académico',
+            '#/teacher-dashboard': 'Dashboard Analítico',
             '#/teacher': 'Gestión de Cursos',
             '#/director': 'Analítica SIS',
             '#/registro': 'Registro Académico',
@@ -143,7 +144,7 @@ const Layout = {
         if (!user) return '/';
         const map = {
             'estudiante': '/dashboard',
-            'docente': '/teacher',
+            'docente': '/teacher-dashboard',
             'director': '/director',
             'decano': '/director',
             'registro': '/registro',
@@ -164,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '/dashboard': 'student-dashboard',
         '/profile': 'profile',
         '/student': 'student',
+        '/teacher-dashboard': 'teacher-dashboard',
         '/teacher': 'teacher',
         '/director': 'director',
         '/registro': 'registro',
