@@ -123,7 +123,7 @@ Views.student = {
                                                 <span class="text-slate-500">Asistencia:</span>
                                                 <span class="font-bold text-slate-700">${m.asistencia.porcentaje}%</span>
                                             </div>
-                                            <button onclick="Views.student.openDetails('${m.materia}')" class="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-800">Ver Detalles</button>
+                                            <button onclick="Views.student.openDetails('${m.materia}', ${JSON.stringify(m).replace(/"/g, '&quot;')})" class="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-800">Ver Detalles</button>
                                         </div>
                                 </div>
                             </div>
@@ -288,7 +288,7 @@ Views.student = {
         document.getElementById('modal-container').classList.add('hidden');
     },
 
-    async openDetails(materia) {
+    async openDetails(materia, m) {
         const user = Auth.getUser();
         const modal = document.getElementById('modal-container');
         const content = document.getElementById('modal-content');
