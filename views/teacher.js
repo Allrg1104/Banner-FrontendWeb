@@ -74,7 +74,14 @@ Views['teacher-dashboard'] = {
                                     <tr>
                                         <td class="py-4 text-sm font-bold text-slate-900">${r.name}</td>
                                         <td class="py-4 text-xs text-slate-500">${r.subject}</td>
-                                        <td class="py-4"><span class="px-2 py-1 rounded-full text-[9px] font-black uppercase ${r.level === 'critical' ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}">${r.reason}</span></td>
+                                        <td class="py-4">
+                                            <span class="px-2 py-1 rounded-full text-[9px] font-black uppercase 
+                                                ${r.level === 'critical' ? 'bg-rose-50 text-rose-600' : 
+                                                  r.level === 'warning' ? 'bg-amber-50 text-amber-600' : 
+                                                  'bg-emerald-50 text-emerald-600'}">
+                                                ${r.reason}
+                                            </span>
+                                        </td>
                                         <td class="py-4 text-center font-black">${r.avg}</td>
                                         <td class="py-4 text-center font-black">${r.absences}</td>
                                     </tr>
@@ -305,13 +312,58 @@ Views['teacher-services'] = {
         `).join('') || '<p class="text-center text-xs italic">Sin resultados</p>';
     },
 
-    openSyllabus() {
-        this.openSvcModal('Syllabus / Plan de Curso', 'Carga dinámica de planes por asignatura.', `
-            <div class="space-y-4">
-                <p class="text-xs text-slate-500">Selecciona una materia para gestionar su Syllabus en la DB:</p>
-                <div class="grid grid-cols-1 gap-2">${this.state.courses.map(c => `<button onclick="Toast.show('Cargando Syllabus de ${c.materia} de la DB...', 'info')" class="text-left p-4 bg-slate-50 rounded-xl hover:bg-indigo-50 font-bold text-sm">${c.materia} (NRC: ${c.nrc})</button>`).join('')}</div>
+    async openSyllabus() {
+        this.openSvcModal('Syllabus / Plan de Curso', 'Gestión de contenidos programáticos registrados en la base de datos.', `
+            <div class="space-y-6">
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-widest">Selecciona una asignatura para gestionar su Syllabus:</p>
+                <div class="grid grid-cols-1 gap-3">
+                    ${this.state.courses.map(c => `
+                        <button onclick="Views['teacher-services'].loadSyllabusEditor(${c.id}, '${c.materia}')" class="flex justify-between items-center p-5 bg-slate-50 hover:bg-indigo-50 rounded-2xl transition-all group">
+                            <div class="text-left">
+                                <div class="text-sm font-black text-slate-900 group-hover:text-indigo-600">${c.materia}</div>
+                                <div class="text-[10px] text-slate-400 font-bold uppercase">NRC: ${c.nrc}</div>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-indigo-600"></i>
+                        </button>
+                    `).join('')}
+                </div>
+                <div id="syllabus-editor-container" class="hidden pt-6 border-t border-slate-100 animate-fade-in">
+                    <!-- Editor se carga dinámicamente -->
+                </div>
             </div>
         `);
+    },
+
+    async loadSyllabusEditor(courseId, courseName) {
+        const container = document.getElementById('syllabus-editor-container');
+        container.classList.remove('hidden');
+        container.innerHTML = '<div class="py-10 text-center text-slate-400 italic">Consultando Syllabus en la base de datos...</div>';
+        
+        const res = await API.get(`/teachers/courses/${courseId}/syllabus`);
+        const data = JSON.parse(res.contenido || '{}');
+
+        container.innerHTML = `
+            <div class="space-y-6 bg-slate-50/50 p-6 rounded-[24px]">
+                <div class="flex justify-between items-center"><h4 class="text-xs font-black uppercase text-indigo-600 tracking-widest">Editor de Syllabus: ${courseName}</h4></div>
+                <div class="space-y-4">
+                    <div><label class="text-[10px] font-black uppercase text-slate-400">Descripción del Curso</label><textarea id="syl-desc" class="w-full bg-white p-4 rounded-xl text-sm border-none shadow-sm h-24">${data.description || ''}</textarea></div>
+                    <div><label class="text-[10px] font-black uppercase text-slate-400">Objetivo General</label><textarea id="syl-obj" class="w-full bg-white p-4 rounded-xl text-sm border-none shadow-sm h-20">${data.objective || ''}</textarea></div>
+                    <div><label class="text-[10px] font-black uppercase text-slate-400">Metodología</label><textarea id="syl-met" class="w-full bg-white p-4 rounded-xl text-sm border-none shadow-sm h-20">${data.methodology || ''}</textarea></div>
+                </div>
+                <button onclick="Views['teacher-services'].saveSyllabus(${courseId})" class="btn-premium btn-primary w-full py-4 uppercase font-black text-xs tracking-widest">Guardar Cambios en Base de Datos</button>
+            </div>
+        `;
+        lucide.createIcons();
+    },
+
+    async saveSyllabus(courseId) {
+        const contenido = {
+            description: document.getElementById('syl-desc').value,
+            objective: document.getElementById('syl-obj').value,
+            methodology: document.getElementById('syl-met').value
+        };
+        await API.post('/teachers/courses/syllabus', { curso_id: courseId, contenido });
+        Toast.show('Syllabus actualizado con éxito', 'success');
     },
 
     // PLACEHOLDERS FUNCIONALES (Para las funciones que faltaban)
