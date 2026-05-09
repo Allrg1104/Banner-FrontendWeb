@@ -277,7 +277,9 @@ Views.teacher = {
             fecha: new Date().toISOString().split('T')[0] 
         });
         Toast.show('Asistencia guardada', 'success');
-     async triggerImport(type) {
+    },
+
+    async triggerImport(type) {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.csv';
