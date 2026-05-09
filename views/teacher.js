@@ -102,9 +102,19 @@ Views.teacher = {
         await this.loadData();
         return `
             <div class="space-y-10 animate-fade-in pb-20">
-                <section>
-                    <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight">Gestión de Cursos</h2>
-                    <p class="text-slate-500 mt-1">Calificaciones, Asistencias y Listas de Clase oficiales.</p>
+                <section class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight">Gestión de Cursos</h2>
+                        <p class="text-slate-500 mt-1">Calificaciones, Asistencias y Listas de Clase oficiales.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="Views.teacher.triggerImport('grades')" class="btn-premium btn-ghost bg-white border-2 border-slate-200 px-6 py-3 text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-50">
+                            <i data-lucide="upload-cloud" class="w-4 h-4 text-indigo-600"></i> Importar Notas
+                        </button>
+                        <button onclick="Views.teacher.triggerImport('attendance')" class="btn-premium btn-ghost bg-white border-2 border-slate-200 px-6 py-3 text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-50">
+                            <i data-lucide="calendar-check" class="w-4 h-4 text-indigo-600"></i> Importar Asistencia
+                        </button>
+                    </div>
                 </section>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">${this.renderCourses()}</div>
 
