@@ -277,9 +277,7 @@ Views.teacher = {
             fecha: new Date().toISOString().split('T')[0] 
         });
         Toast.show('Asistencia guardada', 'success');
-    },
-
-    async triggerImport(type) {
+     async triggerImport(type) {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.csv';
@@ -290,53 +288,81 @@ Views.teacher = {
             const reader = new FileReader();
             reader.onload = async (event) => {
                 const text = event.target.result;
-                const rows = text.split('\n').map(r => r.split(','));
+                const rows = text.split('\n').filter(r => r.trim()).map(r => r.split(','));
                 const headers = rows[0].map(h => h.trim().toUpperCase());
                 const data = rows.slice(1).map(row => {
                     const obj = {};
                     headers.forEach((h, i) => { if (row[i]) obj[h] = row[i].trim(); });
                     return obj;
-                }).filter(o => Object.keys(o).length > 0);
+                });
 
-                try {
-                    Toast.show('Procesando archivo...', 'info');
-                    const endpoint = type === 'grades' ? '/teachers/import-grades' : '/teachers/import-attendance';
-                    await API.post(endpoint, { data });
-                    Toast.show('Importación exitosa en la base de datos', 'success');
-                    this.loadData();
-                } catch (err) {
-                    Toast.error('Error en el formato: Revisa que las columnas coincidan');
-                }
+                // MOSTRAR VISTA PREVIA
+                this.showImportPreview(type, data);
             };
             reader.readAsText(file);
         };
 
-        // Mostrar guía antes de subir
         this.openSvcModal(
             `Importar ${type === 'grades' ? 'Notas' : 'Asistencia'}`,
-            'Guía de formato para el archivo CSV.',
+            'Paso 1: Selecciona tu archivo con la estructura correcta.',
             `
             <div class="space-y-6">
                 <div class="bg-indigo-50 p-6 rounded-2xl border-l-4 border-indigo-600">
-                    <p class="text-sm font-bold text-indigo-900 mb-2">Columnas requeridas en tu archivo:</p>
+                    <p class="text-sm font-bold text-indigo-900 mb-2">Columnas requeridas (en este orden):</p>
                     <ul class="text-xs space-y-2 text-indigo-700 font-bold">
                         ${type === 'grades' ? 
-                            '<li>• ID_ESTUDIANTE (Ej: 00040000)</li><li>• COMPONENTE (Ej: Parcial 1)</li><li>• NOTA (Ej: 4.5)</li>' :
-                            '<li>• ID_ESTUDIANTE (Ej: 00040000)</li><li>• FECHA (Ej: 2025-05-15)</li><li>• TIPO (Ej: presente)</li>'
+                            '<li>1. NRC (Ej: 10006)</li><li>2. ID_ESTUDIANTE (Ej: 00040000)</li><li>3. COMPONENTE (Ej: Parcial 1)</li><li>4. NOTA (Ej: 4.5)</li>' :
+                            '<li>1. NRC (Ej: 10006)</li><li>2. ID_ESTUDIANTE (Ej: 00040000)</li><li>3. FECHA (Ej: 2025-05-15)</li><li>4. TIPO (Ej: presente)</li>'
                         }
                     </ul>
                 </div>
-                <div class="p-4 bg-amber-50 text-amber-700 text-[10px] font-black uppercase rounded-xl">
-                    Asegúrate de guardar tu Excel como "CSV (delimitado por comas)"
-                </div>
-                <button id="btn-select-file" class="btn-premium btn-primary w-full py-4 uppercase font-black text-xs">Seleccionar Archivo y Subir</button>
+                <button id="btn-select-file" class="btn-premium btn-primary w-full py-4 uppercase font-black text-xs">Subir archivo para revisión</button>
             </div>
             `
         );
-        
-        document.getElementById('btn-select-file').onclick = () => {
-            this.closeModal();
-            input.click();
+        document.getElementById('btn-select-file').onclick = () => input.click();
+    },
+
+    showImportPreview(type, data) {
+        const title = `Vista Previa: ${type === 'grades' ? 'Notas' : 'Asistencias'}`;
+        const desc = `Revisa los datos antes de guardarlos permanentemente en la base de datos.`;
+        const tableRows = data.map(d => `
+            <tr class="border-b border-slate-50 text-[10px] font-bold">
+                <td class="py-2">${d.NRC || '---'}</td>
+                <td class="py-2">${d.ID_ESTUDIANTE || '---'}</td>
+                <td class="py-2 text-indigo-600">${type === 'grades' ? d.COMPONENTE : d.FECHA}</td>
+                <td class="py-2 text-right">${type === 'grades' ? d.NOTA : d.TIPO}</td>
+            </tr>
+        `).join('');
+
+        this.openSvcModal(title, desc, `
+            <div class="space-y-6">
+                <div class="max-h-60 overflow-y-auto border border-slate-100 rounded-xl">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 sticky top-0">
+                            <tr class="text-[9px] uppercase font-black text-slate-400"><th class="p-3">NRC</th><th class="p-3">Estudiante</th><th class="p-3">${type === 'grades' ? 'Comp' : 'Fecha'}</th><th class="p-3 text-right">${type === 'grades' ? 'Nota' : 'Tipo'}</th></tr>
+                        </thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="document.getElementById('service-modal').classList.add('hidden')" class="btn-premium btn-ghost flex-1 py-4 uppercase font-black text-xs">Cancelar</button>
+                    <button id="btn-confirm-import" class="btn-premium btn-primary flex-[2] py-4 uppercase font-black text-xs">Confirmar y Guardar en DB</button>
+                </div>
+            </div>
+        `);
+
+        document.getElementById('btn-confirm-import').onclick = async () => {
+            try {
+                Toast.show('Guardando en la base de datos...', 'info');
+                const endpoint = type === 'grades' ? '/teachers/import-grades' : '/teachers/import-attendance';
+                await API.post(endpoint, { data });
+                Toast.show('¡Importación completada con éxito!', 'success');
+                this.closeModal();
+                this.loadData();
+            } catch (err) {
+                Toast.error('Error al guardar. Revisa el formato.');
+            }
         };
     }
 };
@@ -387,18 +413,6 @@ Views['teacher-services'] = {
                     </div>
                 </div>
 
-                <!-- Modal Universal de Servicios -->
-                <div id="service-modal" class="hidden fixed inset-0 z-[70] bg-slate-900/80 backdrop-blur flex items-center justify-center p-4">
-                    <div class="bg-white rounded-[32px] max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-scale-up shadow-2xl">
-                        <div class="p-8 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0">
-                            <div><h3 id="svc-title" class="text-2xl font-black text-slate-900"></h3><p id="svc-desc" class="text-sm text-slate-500 mt-1"></p></div>
-                            <button onclick="Views['teacher-services'].closeModal()" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200"><i data-lucide="x" class="w-5 h-5"></i></button>
-                        </div>
-                        <div id="svc-body" class="p-8 overflow-y-auto space-y-6"></div>
-                        <div id="svc-footer" class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
-                            <button onclick="Views['teacher-services'].closeModal()" class="btn-premium btn-ghost">Cerrar</button>
-                        </div>
-                    </div>
                 </div>
             </div>
         `;
