@@ -210,6 +210,65 @@ Views.teacher = {
     updateTempGrade(mId, c, v) { this.state.tempGrades[mId] = this.state.tempGrades[mId] || {}; this.state.tempGrades[mId][c] = v; },
     async saveGrades(mId) { const g = this.state.tempGrades[mId]; if (!g) return; for (const [c, v] of Object.entries(g)) await API.post('/teachers/update-grade', { matricula_id: mId, componente: c, valor: v }); Toast.show('Guardado', 'success'); },
     async saveAllGrades() { for (const [mId, g] of Object.entries(this.state.tempGrades)) for (const [c, v] of Object.entries(g)) await API.post('/teachers/update-grade', { matricula_id: mId, componente: c, valor: v }); Toast.show('Todo guardado', 'success'); this.closeModal(); },
+    
+    async openAttendance(id, name, nrc) {
+        this.state.selectedCourse = id;
+        this.state.selectedNRC = nrc;
+        document.getElementById('modal-course-title').innerText = name;
+        document.getElementById('modal-course-subtitle').innerText = `Gestión de Asistencia - NRC: ${nrc}`;
+        document.getElementById('grades-modal').classList.remove('hidden');
+        document.getElementById('btn-print-report').classList.add('hidden');
+        document.getElementById('btn-save-all').onclick = () => this.saveAllAttendance();
+        
+        this.state.students = await API.get(`/teachers/courses/${id}/students`);
+        this.renderAttendanceList();
+    },
+
+    renderAttendanceList() {
+        const body = document.getElementById('students-list-body');
+        const header = document.getElementById('modal-table-header');
+        header.innerHTML = `
+            <tr class="text-xs font-black text-slate-500 uppercase border-b-2 border-slate-200">
+                <th class="pb-6 pl-4">Estudiante</th>
+                <th class="text-center pb-6">Estado de Asistencia</th>
+                <th class="text-right pb-6 pr-4">Acción</th>
+            </tr>`;
+        
+        body.innerHTML = this.state.students.map((s, index) => `
+            <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} border-b border-slate-100">
+                <td class="py-6 pl-4">
+                    <div class="text-sm font-black text-slate-900">${s.nombres} ${s.apellidos}</div>
+                    <div class="text-[10px] text-slate-400 font-bold tracking-widest">${s.institutional_id}</div>
+                </td>
+                <td class="text-center py-6">
+                    <select onchange="Views.teacher.updateTempAttendance(${s.matricula_id}, this.value)" 
+                        class="bg-white border-2 border-slate-300 rounded-xl p-3 font-bold text-sm outline-none focus:border-indigo-600 shadow-sm">
+                        <option value="presente">Presente</option>
+                        <option value="ausente_no_justificada">Ausente Injustificada</option>
+                        <option value="ausente_justificada">Ausente Justificada</option>
+                    </select>
+                </td>
+                <td class="text-right py-6 pr-4">
+                    <button onclick="Views.teacher.saveSingleAttendance(${s.matricula_id})" class="p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        lucide.createIcons();
+    },
+
+    updateTempAttendance(mId, val) { this.state.tempAttendance[mId] = val; },
+    async saveSingleAttendance(mId) {
+        const val = this.state.tempAttendance[mId] || 'presente';
+        await API.post('/teachers/update-attendance', { 
+            matricula_id: mId, 
+            tipo: val, 
+            fecha: new Date().toISOString().split('T')[0] 
+        });
+        Toast.show('Asistencia guardada', 'success');
+    },
+
     async triggerImport(type) {
         const input = document.createElement('input');
         input.type = 'file';
