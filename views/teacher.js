@@ -303,11 +303,19 @@ Views.teacher = {
                     const obj = {};
                     headerRow.forEach((h, i) => { 
                         let val = values[i];
-                        // AUTO-PAD ID_ESTUDIANTE (Si es número, ponerle ceros a la izquierda hasta 8 dígitos)
-                        if (h === 'ID_ESTUDIANTE' && val && !isNaN(val)) {
+                        // NORMALIZACIÓN DE CABECERAS
+                        let key = h;
+                        if (h.includes('NRC')) key = 'NRC';
+                        if (h.includes('ESTUDIANTE') || h === 'ID') key = 'ID_ESTUDIANTE';
+                        if (h.includes('COMP')) key = 'COMPONENTE';
+                        if (h.includes('NOTA') || h.includes('VALOR')) key = 'NOTA';
+                        if (h.includes('FECHA')) key = 'FECHA';
+                        if (h.includes('TIPO')) key = 'TIPO';
+
+                        if (key === 'ID_ESTUDIANTE' && val && !isNaN(val)) {
                             val = val.padStart(8, '0');
                         }
-                        obj[h] = val; 
+                        obj[key] = val; 
                     });
                     return obj;
                 });
