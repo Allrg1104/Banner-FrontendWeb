@@ -29,6 +29,16 @@ const TeacherBase = {
     closeModal() {
         document.getElementById('grades-modal')?.classList.add('hidden');
         document.getElementById('service-modal')?.classList.add('hidden');
+    },
+
+    openSvcModal(title, desc, body) {
+        const modal = document.getElementById('service-modal');
+        if (!modal) return;
+        document.getElementById('svc-title').innerText = title;
+        document.getElementById('svc-desc').innerText = desc;
+        document.getElementById('svc-body').innerHTML = body;
+        modal.classList.remove('hidden');
+        lucide.createIcons();
     }
 };
 
