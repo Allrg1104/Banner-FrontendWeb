@@ -155,30 +155,41 @@ Views.teacher = {
     renderStudents() {
         const body = document.getElementById('students-list-body');
         const header = document.getElementById('modal-table-header');
-        header.innerHTML = `<tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest"><th class="pb-6">Estudiante (ID)</th><th class="text-center pb-6">Parcial 1</th><th class="text-center pb-6">Parcial 2</th><th class="text-center pb-6">Final</th><th class="text-right pb-6"></th></tr>`;
-        body.innerHTML = this.state.students.map(s => `
-            <tr class="group hover:bg-slate-50/50 transition-all border-b border-slate-50">
-                <td class="py-6">
-                    <div class="text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors">${s.nombres} ${s.apellidos}</div>
-                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">${s.institutional_id}</div>
+        header.innerHTML = `
+            <tr class="text-xs font-black text-slate-500 uppercase tracking-widest border-b-2 border-slate-200">
+                <th class="pb-6 pl-4">Nombre del Estudiante</th>
+                <th class="text-center pb-6">Primer Parcial</th>
+                <th class="text-center pb-6">Segundo Parcial</th>
+                <th class="text-center pb-6">Examen Final</th>
+                <th class="text-right pb-6 pr-4">Guardar</th>
+            </tr>`;
+        
+        body.innerHTML = this.state.students.map((s, index) => `
+            <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} border-b border-slate-100 hover:bg-indigo-50/30 transition-colors">
+                <td class="py-8 pl-4">
+                    <div class="text-base font-black text-slate-900">${s.nombres} ${s.apellidos}</div>
+                    <div class="text-xs text-indigo-600 font-bold tracking-tight">ID Institucional: ${s.institutional_id}</div>
                 </td>
-                <td class="text-center py-6">
+                <td class="text-center py-8">
                     <input type="number" step="0.1" min="0" max="5" value="${s.grades['Parcial 1'] || ''}" 
-                        class="w-16 h-12 text-center bg-slate-100 border-2 border-transparent rounded-xl font-black text-slate-900 outline-none focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-all" 
+                        placeholder="0.0"
+                        class="w-24 h-14 text-center bg-white border-2 border-slate-400 rounded-2xl font-black text-xl text-slate-900 shadow-sm outline-none focus:border-indigo-600 focus:ring-8 focus:ring-indigo-600/20 transition-all placeholder:text-slate-200" 
                         onchange="Views.teacher.updateTempGrade(${s.matricula_id}, 'Parcial 1', this.value)">
                 </td>
-                <td class="text-center py-6">
+                <td class="text-center py-8">
                     <input type="number" step="0.1" min="0" max="5" value="${s.grades['Parcial 2'] || ''}" 
-                        class="w-16 h-12 text-center bg-slate-100 border-2 border-transparent rounded-xl font-black text-slate-900 outline-none focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-all" 
+                        placeholder="0.0"
+                        class="w-24 h-14 text-center bg-white border-2 border-slate-400 rounded-2xl font-black text-xl text-slate-900 shadow-sm outline-none focus:border-indigo-600 focus:ring-8 focus:ring-indigo-600/20 transition-all placeholder:text-slate-200" 
                         onchange="Views.teacher.updateTempGrade(${s.matricula_id}, 'Parcial 2', this.value)">
                 </td>
-                <td class="text-center py-6">
+                <td class="text-center py-8">
                     <input type="number" step="0.1" min="0" max="5" value="${s.grades['Examen Final'] || ''}" 
-                        class="w-16 h-12 text-center bg-slate-100 border-2 border-transparent rounded-xl font-black text-slate-900 outline-none focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-all" 
+                        placeholder="0.0"
+                        class="w-24 h-14 text-center bg-white border-2 border-slate-400 rounded-2xl font-black text-xl text-slate-900 shadow-sm outline-none focus:border-indigo-600 focus:ring-8 focus:ring-indigo-600/20 transition-all placeholder:text-slate-200" 
                         onchange="Views.teacher.updateTempGrade(${s.matricula_id}, 'Examen Final', this.value)">
                 </td>
-                <td class="text-right py-6">
-                    <button onclick="Views.teacher.saveGrades(${s.matricula_id})" class="p-3 text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all">
+                <td class="text-right py-8 pr-4">
+                    <button onclick="Views.teacher.saveGrades(${s.matricula_id})" class="p-4 bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-2xl transition-all shadow-md">
                         <i data-lucide="save" class="w-6 h-6"></i>
                     </button>
                 </td>
