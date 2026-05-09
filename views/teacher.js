@@ -155,14 +155,33 @@ Views.teacher = {
     renderStudents() {
         const body = document.getElementById('students-list-body');
         const header = document.getElementById('modal-table-header');
-        header.innerHTML = `<tr class="text-[10px] font-black text-slate-400 uppercase"><th class="pb-4">Estudiante (ID)</th><th class="text-center pb-4">Parcial 1</th><th class="text-center pb-4">Parcial 2</th><th class="text-center pb-4">Final</th><th class="text-right pb-4">Acción</th></tr>`;
+        header.innerHTML = `<tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest"><th class="pb-6">Estudiante (ID)</th><th class="text-center pb-6">Parcial 1</th><th class="text-center pb-6">Parcial 2</th><th class="text-center pb-6">Final</th><th class="text-right pb-6"></th></tr>`;
         body.innerHTML = this.state.students.map(s => `
-            <tr class="border-b border-slate-50">
-                <td class="py-4"><div><div class="text-sm font-bold text-slate-900">${s.nombres} ${s.apellidos}</div><div class="text-[10px] text-indigo-600 font-black">${s.institutional_id}</div></div></td>
-                <td class="text-center"><input type="number" step="0.1" value="${s.grades['Parcial 1'] || ''}" class="w-12 text-center bg-slate-50 border rounded p-1 font-bold" onchange="Views.teacher.updateTempGrade(${s.matricula_id}, 'Parcial 1', this.value)"></td>
-                <td class="text-center"><input type="number" step="0.1" value="${s.grades['Parcial 2'] || ''}" class="w-12 text-center bg-slate-50 border rounded p-1 font-bold" onchange="Views.teacher.updateTempGrade(${s.matricula_id}, 'Parcial 2', this.value)"></td>
-                <td class="text-center"><input type="number" step="0.1" value="${s.grades['Examen Final'] || ''}" class="w-12 text-center bg-slate-50 border rounded p-1 font-bold" onchange="Views.teacher.updateTempGrade(${s.matricula_id}, 'Examen Final', this.value)"></td>
-                <td class="text-right"><button onclick="Views.teacher.saveGrades(${s.matricula_id})" class="text-emerald-600"><i data-lucide="save" class="w-5 h-5"></i></button></td>
+            <tr class="group hover:bg-slate-50/50 transition-all border-b border-slate-50">
+                <td class="py-6">
+                    <div class="text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors">${s.nombres} ${s.apellidos}</div>
+                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">${s.institutional_id}</div>
+                </td>
+                <td class="text-center py-6">
+                    <input type="number" step="0.1" min="0" max="5" value="${s.grades['Parcial 1'] || ''}" 
+                        class="w-16 h-12 text-center bg-slate-100 border-2 border-transparent rounded-xl font-black text-slate-900 outline-none focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-all" 
+                        onchange="Views.teacher.updateTempGrade(${s.matricula_id}, 'Parcial 1', this.value)">
+                </td>
+                <td class="text-center py-6">
+                    <input type="number" step="0.1" min="0" max="5" value="${s.grades['Parcial 2'] || ''}" 
+                        class="w-16 h-12 text-center bg-slate-100 border-2 border-transparent rounded-xl font-black text-slate-900 outline-none focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-all" 
+                        onchange="Views.teacher.updateTempGrade(${s.matricula_id}, 'Parcial 2', this.value)">
+                </td>
+                <td class="text-center py-6">
+                    <input type="number" step="0.1" min="0" max="5" value="${s.grades['Examen Final'] || ''}" 
+                        class="w-16 h-12 text-center bg-slate-100 border-2 border-transparent rounded-xl font-black text-slate-900 outline-none focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-all" 
+                        onchange="Views.teacher.updateTempGrade(${s.matricula_id}, 'Examen Final', this.value)">
+                </td>
+                <td class="text-right py-6">
+                    <button onclick="Views.teacher.saveGrades(${s.matricula_id})" class="p-3 text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all">
+                        <i data-lucide="save" class="w-6 h-6"></i>
+                    </button>
+                </td>
             </tr>
         `).join('');
         lucide.createIcons();
