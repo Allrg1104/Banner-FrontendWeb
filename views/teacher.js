@@ -210,14 +210,66 @@ Views.teacher = {
     updateTempGrade(mId, c, v) { this.state.tempGrades[mId] = this.state.tempGrades[mId] || {}; this.state.tempGrades[mId][c] = v; },
     async saveGrades(mId) { const g = this.state.tempGrades[mId]; if (!g) return; for (const [c, v] of Object.entries(g)) await API.post('/teachers/update-grade', { matricula_id: mId, componente: c, valor: v }); Toast.show('Guardado', 'success'); },
     async saveAllGrades() { for (const [mId, g] of Object.entries(this.state.tempGrades)) for (const [c, v] of Object.entries(g)) await API.post('/teachers/update-grade', { matricula_id: mId, componente: c, valor: v }); Toast.show('Todo guardado', 'success'); this.closeModal(); },
-    async openAttendance(id, name, nrc) { /* Lógica de asistencia heredada */ Toast.show('Modulo de asistencia activo', 'info'); },
-    async downloadCourseReport() { 
-        const course = this.state.courses.find(c => c.id === this.state.selectedCourse);
-        const win = window.open('', '_blank');
-        win.document.write(`<html><head><title>Acta</title><script src="https://cdn.tailwindcss.com"></script></head><body><div class="p-10"><h1 class="text-2xl font-black mb-4">Acta Oficial de Notas</h1><p class="font-bold">NRC: ${course.nrc} | Materia: ${course.materia}</p><table>...</table><button onclick="window.print()">Imprimir</button></div></body></html>`);
-        win.document.close();
-    }
-};
+    async triggerImport(type) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.csv';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const text = event.target.result;
+                const rows = text.split('\n').map(r => r.split(','));
+                const headers = rows[0].map(h => h.trim().toUpperCase());
+                const data = rows.slice(1).map(row => {
+                    const obj = {};
+                    headers.forEach((h, i) => { if (row[i]) obj[h] = row[i].trim(); });
+                    return obj;
+                }).filter(o => Object.keys(o).length > 0);
+
+                try {
+                    Toast.show('Procesando archivo...', 'info');
+                    const endpoint = type === 'grades' ? '/teachers/import-grades' : '/teachers/import-attendance';
+                    await API.post(endpoint, { data });
+                    Toast.show('Importación exitosa en la base de datos', 'success');
+                    this.loadData();
+                } catch (err) {
+                    Toast.error('Error en el formato: Revisa que las columnas coincidan');
+                }
+            };
+            reader.readAsText(file);
+        };
+
+        // Mostrar guía antes de subir
+        this.openSvcModal(
+            `Importar ${type === 'grades' ? 'Notas' : 'Asistencia'}`,
+            'Guía de formato para el archivo CSV.',
+            `
+            <div class="space-y-6">
+                <div class="bg-indigo-50 p-6 rounded-2xl border-l-4 border-indigo-600">
+                    <p class="text-sm font-bold text-indigo-900 mb-2">Columnas requeridas en tu archivo:</p>
+                    <ul class="text-xs space-y-2 text-indigo-700 font-bold">
+                        ${type === 'grades' ? 
+                            '<li>• ID_ESTUDIANTE (Ej: 00040000)</li><li>• COMPONENTE (Ej: Parcial 1)</li><li>• NOTA (Ej: 4.5)</li>' :
+                            '<li>• ID_ESTUDIANTE (Ej: 00040000)</li><li>• FECHA (Ej: 2025-05-15)</li><li>• TIPO (Ej: presente)</li>'
+                        }
+                    </ul>
+                </div>
+                <div class="p-4 bg-amber-50 text-amber-700 text-[10px] font-black uppercase rounded-xl">
+                    Asegúrate de guardar tu Excel como "CSV (delimitado por comas)"
+                </div>
+                <button id="btn-select-file" class="btn-premium btn-primary w-full py-4 uppercase font-black text-xs">Seleccionar Archivo y Subir</button>
+            </div>
+            `
+        );
+        
+        document.getElementById('btn-select-file').onclick = () => {
+            this.closeModal();
+            input.click();
+        };
+    },
 
 // VISTA: CENTRO DE SERVICIOS (TODO INTEGRADO)
 Views['teacher-services'] = {
