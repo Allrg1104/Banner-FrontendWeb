@@ -269,7 +269,8 @@ Views.teacher = {
             this.closeModal();
             input.click();
         };
-    },
+    }
+};
 
 // VISTA: CENTRO DE SERVICIOS (TODO INTEGRADO)
 Views['teacher-services'] = {
