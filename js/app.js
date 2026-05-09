@@ -49,6 +49,7 @@ const Layout = {
                         ${user.rol === 'estudiante' ? this.navItem('/dashboard', 'layout-dashboard', 'Dashboard') : this.navItem(this.getUserDashboardPath(), 'layout-dashboard', 'Dashboard')}
                         ${user.rol === 'estudiante' ? this.navItem('/student', 'book-open', 'Mi Academia') : ''}
                         ${user.rol === 'docente' ? this.navItem('/teacher', 'presentation', 'Mis Cursos') : ''}
+                        ${user.rol === 'docente' ? this.navItem('/teacher-services', 'briefcase', 'Servicios Docente') : ''}
                         ${user.rol === 'director' || user.rol === 'decano' ? this.navItem('/director', 'bar-chart-3', 'Métricas SIS') : ''}
                         ${user.rol === 'registro' ? this.navItem('/registro', 'users', 'Gestión Usuarios') : ''}
                         ${user.rol === 'financiero' ? this.navItem('/financial', 'wallet', 'Cartera') : ''}
@@ -128,6 +129,7 @@ const Layout = {
             '#/': 'Resumen General',
             '#/student': 'Mi Perfil Académico',
             '#/teacher-dashboard': 'Dashboard Analítico',
+            '#/teacher-services': 'Centro de Servicios Docente',
             '#/teacher': 'Gestión de Cursos',
             '#/director': 'Analítica SIS',
             '#/registro': 'Registro Académico',
@@ -166,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '/profile': 'profile',
         '/student': 'student',
         '/teacher-dashboard': 'teacher-dashboard',
+        '/teacher-services': 'teacher-services',
         '/teacher': 'teacher',
         '/director': 'director',
         '/registro': 'registro',
