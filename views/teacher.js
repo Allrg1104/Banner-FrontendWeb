@@ -290,15 +290,28 @@ Views.teacher = {
             const reader = new FileReader();
             reader.onload = async (event) => {
                 const text = event.target.result;
-                const rows = text.split('\n').filter(r => r.trim()).map(r => r.split(','));
-                const headers = rows[0].map(h => h.trim().toUpperCase());
+                const rows = text.split('\n').filter(r => r.trim());
+                
+                // DETECTOR INTELIGENTE DE SEPARADOR (; o ,)
+                const firstRow = rows[0];
+                const delimiter = firstRow.includes(';') ? ';' : ',';
+                
+                const headerRow = firstRow.split(delimiter).map(h => h.trim().replace(/"/g, '').toUpperCase());
+                
                 const data = rows.slice(1).map(row => {
+                    const values = row.split(delimiter).map(v => v.trim().replace(/"/g, ''));
                     const obj = {};
-                    headers.forEach((h, i) => { if (row[i]) obj[h] = row[i].trim(); });
+                    headerRow.forEach((h, i) => { 
+                        let val = values[i];
+                        // AUTO-PAD ID_ESTUDIANTE (Si es número, ponerle ceros a la izquierda hasta 8 dígitos)
+                        if (h === 'ID_ESTUDIANTE' && val && !isNaN(val)) {
+                            val = val.padStart(8, '0');
+                        }
+                        obj[h] = val; 
+                    });
                     return obj;
                 });
 
-                // MOSTRAR VISTA PREVIA
                 this.showImportPreview(type, data);
             };
             reader.readAsText(file);
