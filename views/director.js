@@ -4,7 +4,8 @@
 
 Views.director = {
   async render() {
-    return Layout.shell(`
+    // Solo el contenido: Router ya envuelve con Layout.shell (evita doble sidebar/header).
+    return `
             <div class="space-y-10">
                 
                 <!-- Executive Hero -->
@@ -92,7 +93,7 @@ Views.director = {
                     </div>
                 </div>
             </div>
-        `);
+        `;
   },
 
   afterRender() {
