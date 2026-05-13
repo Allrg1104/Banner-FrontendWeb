@@ -104,6 +104,7 @@ Views.student = {
                                     </div>
                                 </div>
                                 <h4 class="text-xl font-bold text-slate-900 mb-1 truncate">${m.materia}</h4>
+                                <p class="text-[10px] text-indigo-600 font-black uppercase tracking-widest mb-2">NRC: ${m.nrc}</p>
                                 <p class="text-slate-400 text-xs mb-6">${m.docente}</p>
                                 
                                 <div class="space-y-4">
