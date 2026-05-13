@@ -236,11 +236,16 @@ Views.teacher = {
         
         document.getElementById('modal-course-title').innerText = name;
         document.getElementById('modal-course-subtitle').innerHTML = `
-            <div class="flex items-center gap-4 mt-2">
-                <span class="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Gestión de Asistencia - NRC: ${nrc}</span>
-                <input type="date" id="attendance-date" value="${this.state.attendanceDate}" 
-                    onchange="Views.teacher.changeAttendanceDate(this.value)"
-                    class="border-2 border-slate-200 rounded-lg px-3 py-1 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500">
+            <div class="flex items-center justify-between mt-2">
+                <div class="flex items-center gap-4">
+                    <span class="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Gestión de Asistencia - NRC: ${nrc}</span>
+                    <input type="date" id="attendance-date" value="${this.state.attendanceDate}" 
+                        onchange="Views.teacher.changeAttendanceDate(this.value)"
+                        class="border-2 border-slate-200 rounded-lg px-3 py-1 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500">
+                </div>
+                <button onclick="Views.teacher.openAttendanceReport(${id}, '${name}', '${nrc}')" class="btn-premium btn-ghost border border-slate-200 text-xs px-4 py-1.5 flex items-center gap-2">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Ver Sábana de Asistencias
+                </button>
             </div>
         `;
         document.getElementById('grades-modal').classList.remove('hidden');
@@ -307,6 +312,68 @@ Views.teacher = {
                 </td>
             </tr>
         `).join('');
+        lucide.createIcons();
+    },
+
+    async openAttendanceReport(id, name, nrc) {
+        document.getElementById('modal-course-title').innerText = name;
+        document.getElementById('modal-course-subtitle').innerHTML = `
+            <div class="flex items-center justify-between mt-2">
+                <span class="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Reporte Histórico de Asistencia - NRC: ${nrc}</span>
+                <button onclick="window.print()" class="btn-premium btn-primary px-4 py-1.5 text-xs flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Exportar a PDF
+                </button>
+            </div>
+        `;
+        document.getElementById('btn-print-report').classList.add('hidden');
+        document.getElementById('btn-save-all').classList.add('hidden');
+        
+        const report = await API.get(`/teachers/courses/${id}/attendance-report`);
+        const header = document.getElementById('modal-table-header');
+        const body = document.getElementById('students-list-body');
+        
+        if (!report.dates || report.dates.length === 0) {
+            header.innerHTML = '';
+            body.innerHTML = '<tr><td class="py-8 text-center text-slate-500 italic">No hay registros de asistencia para este curso.</td></tr>';
+            return;
+        }
+
+        const dateHeaders = report.dates.map(d => `<th class="text-center pb-4 px-2 whitespace-nowrap"><div class="-rotate-45 transform origin-bottom-left text-[9px] translate-y-4 translate-x-2">${d}</div></th>`).join('');
+        
+        header.innerHTML = `
+            <tr class="text-xs font-black text-slate-500 uppercase border-b-2 border-slate-200 h-20">
+                <th class="pb-4 pl-4 text-left align-bottom">Estudiante</th>
+                ${dateHeaders}
+                <th class="text-center pb-4 pr-4 align-bottom whitespace-nowrap">Total Faltas</th>
+            </tr>
+        `;
+
+        body.innerHTML = report.students.map((s, index) => {
+            let totalFaltas = 0;
+            const cells = report.dates.map(date => {
+                const record = s.history.find(h => h.fecha === date);
+                let icon = '<span class="text-slate-300">-</span>';
+                if (record) {
+                    if (record.tipo === 'presente') icon = '<i data-lucide="check" class="w-4 h-4 text-emerald-500 mx-auto"></i>';
+                    else if (record.tipo === 'ausente_no_justificada') { icon = '<i data-lucide="x" class="w-4 h-4 text-rose-500 mx-auto"></i>'; totalFaltas++; }
+                    else if (record.tipo === 'ausente_justificada') { icon = '<i data-lucide="minus-circle" class="w-4 h-4 text-amber-500 mx-auto"></i>'; totalFaltas++; }
+                }
+                return `<td class="text-center py-4 px-2 border-l border-slate-100">${icon}</td>`;
+            }).join('');
+
+            return `
+            <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} border-b border-slate-100 hover:bg-slate-100 transition-colors">
+                <td class="py-4 pl-4 w-64">
+                    <div class="text-[11px] font-black text-slate-900 truncate" title="${s.name}">${s.name}</div>
+                    <div class="text-[9px] text-slate-400 font-bold tracking-widest">${s.student_id}</div>
+                </td>
+                ${cells}
+                <td class="text-center py-4 pr-4 border-l border-slate-100">
+                    <span class="font-black text-[11px] ${totalFaltas > 2 ? 'text-rose-600' : 'text-slate-700'}">${totalFaltas}</span>
+                </td>
+            </tr>
+            `;
+        }).join('');
         lucide.createIcons();
     },
 
