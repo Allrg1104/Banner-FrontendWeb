@@ -4,7 +4,7 @@
  */
 // Views container is initialized in index.html to prevent Module Hoisting conflicts
 
-import './api.js?v=18';
+import './api.js?v=19';
 import './auth.js?v=18';
 import './router.js?v=18';
 
@@ -15,6 +15,7 @@ import '../views/profile.js';
 import '../views/student.js';
 import '../views/teacher.js';
 import '../views/director.js';
+import '../views/director-attendance.js';
 import '../views/financial.js';
 import '../views/registro.js';
 import '../views/requests.js';
@@ -51,6 +52,7 @@ const Layout = {
                         ${user.rol === 'docente' ? this.navItem('/teacher', 'presentation', 'Mis Cursos') : ''}
                         ${user.rol === 'docente' ? this.navItem('/teacher-services', 'briefcase', 'Servicios Docente') : ''}
                         ${user.rol === 'director' || user.rol === 'decano' ? this.navItem('/director', 'bar-chart-3', 'Métricas SIS') : ''}
+                        ${user.rol === 'director' || user.rol === 'decano' ? this.navItem('/director-asistencia', 'clipboard-check', 'Asistencias') : ''}
                         ${user.rol === 'registro' ? this.navItem('/registro', 'users', 'Gestión Usuarios') : ''}
                         ${user.rol === 'financiero' ? this.navItem('/financial', 'wallet', 'Cartera') : ''}
                         ${user.rol === 'admin' ? this.navItem('/admin', 'shield-check', 'Admin Usuarios') : ''}
@@ -132,6 +134,7 @@ const Layout = {
             '#/teacher-services': 'Centro de Servicios Docente',
             '#/teacher': 'Gestión de Cursos',
             '#/director': 'Analítica SIS',
+            '#/director-asistencia': 'Asistencias programa',
             '#/registro': 'Registro Académico',
             '#/financial': 'Módulo Financiero',
             '#/admin': 'Admin Usuarios',
@@ -171,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '/teacher-services': 'teacher-services',
         '/teacher': 'teacher',
         '/director': 'director',
+        '/director-asistencia': 'director-attendance',
         '/registro': 'registro',
         '/requests': 'requests',
         '/financial': 'financial',

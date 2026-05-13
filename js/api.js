@@ -9,12 +9,13 @@ const API_BASE_URL = window.location.hostname.includes('unicatolica.online')
 
 const API = {
     async request(endpoint, options = {}) {
+        const { silent = false, ...fetchOptions } = options;
         // Get token from session
         const token = sessionStorage.getItem('token');
 
         const headers = {
             'Content-Type': 'application/json',
-            ...options.headers
+            ...fetchOptions.headers
         };
 
         if (token) {
@@ -29,7 +30,7 @@ const API = {
             console.log(`📡 [API DEBUG] Llamando a: ${url}`);
 
             const response = await fetch(url, {
-                ...options,
+                ...fetchOptions,
                 headers
             });
 
@@ -42,19 +43,22 @@ const API = {
                     Router.navigate('/login');
                     throw new Error('Sesión expirada. Por favor ingresa de nuevo.');
                 }
-                throw new Error(data.error || 'Error en la petición');
+                const err = new Error(data.error || 'Error en la petición');
+                err.status = response.status;
+                throw err;
             }
 
             return data;
         } catch (err) {
             console.error('API Error:', err.message);
-            Toast.show(err.message, 'error');
+            const skipToast = silent && err.status === 404;
+            if (!skipToast) Toast.show(err.message, 'error');
             throw err;
         }
     },
 
-    get(endpoint) {
-        return this.request(endpoint, { method: 'GET' });
+    get(endpoint, opts = {}) {
+        return this.request(endpoint, { method: 'GET', ...opts });
     },
 
     post(endpoint, body) {
