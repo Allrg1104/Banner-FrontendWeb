@@ -150,12 +150,19 @@ Views.teacher = {
 
     renderCourses() {
         return this.state.courses.map(c => `
-            <div class="card-premium p-8 bg-white group">
-                <h3 class="text-xl font-black text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">${c.materia}</h3>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-6">NRC: ${c.nrc}</p>
-                <div class="flex gap-2">
-                    <button onclick="Views.teacher.openCourse(${c.id}, '${c.materia}')" class="btn-premium btn-primary flex-1 py-3 text-xs">Notas/Lista</button>
-                    <button onclick="Views.teacher.openAttendance(${c.id}, '${c.materia}', '${c.nrc}')" class="btn-premium btn-ghost flex-1 py-3 text-xs">Asistencia</button>
+            <div class="card-premium p-8 bg-white group flex flex-col justify-between">
+                <div>
+                    <h3 class="text-xl font-black text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">${c.materia}</h3>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-6">NRC: ${c.nrc}</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button onclick="Views.teacher.openStudentList(${c.id}, '${c.materia}', '${c.nrc}')" class="btn-premium bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 w-full py-3 text-xs flex justify-center items-center gap-2">
+                        <i data-lucide="users" class="w-4 h-4"></i> Ver Estudiantes
+                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="Views.teacher.openCourse(${c.id}, '${c.materia}')" class="btn-premium btn-primary flex-1 py-3 text-xs">Notas</button>
+                        <button onclick="Views.teacher.openAttendance(${c.id}, '${c.materia}', '${c.nrc}')" class="btn-premium btn-ghost flex-1 py-3 text-xs border border-slate-200">Asistencia</button>
+                    </div>
                 </div>
             </div>
         `).join('');
@@ -167,6 +174,7 @@ Views.teacher = {
         document.getElementById('modal-course-subtitle').innerText = 'Lista de Clase e Ingreso de Calificaciones';
         document.getElementById('grades-modal').classList.remove('hidden');
         document.getElementById('btn-print-report').classList.remove('hidden');
+        document.getElementById('btn-save-all').classList.remove('hidden');
         document.getElementById('btn-save-all').onclick = () => this.saveAllGrades();
         this.state.students = await API.get(`/teachers/courses/${id}/students`);
         this.renderStudents();
@@ -228,10 +236,49 @@ Views.teacher = {
         document.getElementById('modal-course-subtitle').innerText = `Gestión de Asistencia - NRC: ${nrc}`;
         document.getElementById('grades-modal').classList.remove('hidden');
         document.getElementById('btn-print-report').classList.add('hidden');
+        document.getElementById('btn-save-all').classList.remove('hidden');
         document.getElementById('btn-save-all').onclick = () => this.saveAllAttendance();
         
         this.state.students = await API.get(`/teachers/courses/${id}/students`);
         this.renderAttendanceList();
+    },
+
+    async openStudentList(id, name, nrc) {
+        this.state.selectedCourse = id;
+        this.state.selectedNRC = nrc;
+        document.getElementById('modal-course-title').innerText = name;
+        document.getElementById('modal-course-subtitle').innerText = `Lista de Estudiantes Matriculados - NRC: ${nrc}`;
+        document.getElementById('grades-modal').classList.remove('hidden');
+        document.getElementById('btn-print-report').classList.remove('hidden');
+        document.getElementById('btn-save-all').classList.add('hidden');
+        
+        this.state.students = await API.get(`/teachers/courses/${id}/students`);
+        this.renderStudentListOnly();
+    },
+
+    renderStudentListOnly() {
+        const body = document.getElementById('students-list-body');
+        const header = document.getElementById('modal-table-header');
+        header.innerHTML = `
+            <tr class="text-xs font-black text-slate-500 uppercase border-b-2 border-slate-200">
+                <th class="pb-6 pl-4 text-left">#</th>
+                <th class="pb-6 pl-4 text-left">Estudiante</th>
+                <th class="text-right pb-6 pr-4">ID Institucional</th>
+            </tr>`;
+        
+        body.innerHTML = this.state.students.map((s, index) => `
+            <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} border-b border-slate-100 hover:bg-indigo-50/30 transition-colors">
+                <td class="py-6 pl-4 text-slate-400 font-bold text-sm">${index + 1}</td>
+                <td class="py-6 pl-4">
+                    <div class="text-sm font-black text-slate-900">${s.nombres} ${s.apellidos}</div>
+                    <div class="text-[10px] font-bold text-slate-400">Usuario: ${s.username}</div>
+                </td>
+                <td class="text-right py-6 pr-4">
+                    <div class="inline-block px-3 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-black text-xs border border-indigo-100 shadow-sm">${s.institutional_id}</div>
+                </td>
+            </tr>
+        `).join('');
+        lucide.createIcons();
     },
 
     renderAttendanceList() {
