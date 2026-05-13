@@ -318,9 +318,9 @@ Views.student = {
             const subjectGrades = grades.filter(g => (g.materia || '').trim().toUpperCase() === safeMateria);
             const absences = allAttendance.filter(a => (a.materia || '').trim().toUpperCase() === safeMateria && a.tipo !== 'presente');
             
-            const c1 = subjectGrades.find(g => g.componente === 'Corte 1')?.valor || '--';
-            const c2 = subjectGrades.find(g => g.componente === 'Corte 2')?.valor || '--';
-            const c3 = subjectGrades.find(g => g.componente === 'Corte 3')?.valor || '--';
+            const c1 = subjectGrades.find(g => g.componente === 'Parcial 1')?.valor || '--';
+            const c2 = subjectGrades.find(g => g.componente === 'Parcial 2')?.valor || '--';
+            const c3 = subjectGrades.find(g => g.componente === 'Examen Final')?.valor || '--';
 
             const attendancePercent = m?.asistencia?.porcentaje || 0;
             const statusLabel = attendancePercent > 80 ? 'Excelente' : attendancePercent > 60 ? 'Regular' : 'En Riesgo';
@@ -349,9 +349,9 @@ Views.student = {
                                 <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-200 pb-2">Distribución de Notas</h4>
                                 <div class="space-y-6">
                                     ${[
-                                        { label: 'Corte 1 (30%)', val: c1 },
-                                        { label: 'Corte 2 (30%)', val: c2 },
-                                        { label: 'Corte 3 (40%)', val: c3 }
+                                        { label: 'Parcial 1 (30%)', val: c1 },
+                                        { label: 'Parcial 2 (30%)', val: c2 },
+                                        { label: 'Examen Final (40%)', val: c3 }
                                     ].map(n => `
                                         <div class="flex items-center justify-between">
                                             <div>
@@ -421,9 +421,9 @@ Views.student = {
         const subjectGrades = grades.filter(g => g.materia === materia);
         const absences = allAttendance.filter(a => a.materia === materia && a.tipo !== 'presente');
         
-        const c1 = subjectGrades.find(g => g.componente === 'Corte 1')?.valor || '0.0';
-        const c2 = subjectGrades.find(g => g.componente === 'Corte 2')?.valor || '0.0';
-        const c3 = subjectGrades.find(g => g.componente === 'Corte 3')?.valor || '0.0';
+        const c1 = subjectGrades.find(g => g.componente === 'Parcial 1')?.valor || '0.0';
+        const c2 = subjectGrades.find(g => g.componente === 'Parcial 2')?.valor || '0.0';
+        const c3 = subjectGrades.find(g => g.componente === 'Examen Final')?.valor || '0.0';
         const def = (c1 * 0.3 + c2 * 0.3 + c3 * 0.4).toFixed(2);
 
         const printWindow = window.open('', '_blank');
