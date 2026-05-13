@@ -315,7 +315,7 @@ Views['profile'] = {
         // En una app real esto sería un fetch al backend
         // En este demo, vamos a hacer el llamado API si existe el endpoint de edición
         try {
-            await API.put(`/admin/users/${user.id}`, user);
+            await API.put(`/auth/profile`, user);
         } catch(e) {
             console.log('API update failed, updating local storage only', e);
         }

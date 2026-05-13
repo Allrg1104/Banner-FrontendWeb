@@ -56,7 +56,7 @@ const Layout = {
                         ${user.rol === 'admin' ? this.navItem('/admin', 'shield-check', 'Admin Usuarios') : ''}
                         
                         <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-8 mb-4 px-4">Operaciones</div>
-                        ${user.rol === 'estudiante' ? this.navItem('/profile', 'user-circle', 'Mi Perfil') : ''}
+                        ${(user.rol === 'estudiante' || user.rol === 'docente') ? this.navItem('/profile', 'user-circle', 'Mi Perfil') : ''}
                         ${user.rol === 'estudiante' ? this.navItem('/requests', 'clipboard-list', 'Mis Solicitudes') : ''}
                         ${this.navItem('/change-password', 'key-round', 'Seguridad')}
                     </nav>

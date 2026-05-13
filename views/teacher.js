@@ -232,14 +232,43 @@ Views.teacher = {
     async openAttendance(id, name, nrc) {
         this.state.selectedCourse = id;
         this.state.selectedNRC = nrc;
+        this.state.attendanceDate = new Date().toISOString().split('T')[0];
+        
         document.getElementById('modal-course-title').innerText = name;
-        document.getElementById('modal-course-subtitle').innerText = `Gestión de Asistencia - NRC: ${nrc}`;
+        document.getElementById('modal-course-subtitle').innerHTML = `
+            <div class="flex items-center gap-4 mt-2">
+                <span class="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Gestión de Asistencia - NRC: ${nrc}</span>
+                <input type="date" id="attendance-date" value="${this.state.attendanceDate}" 
+                    onchange="Views.teacher.changeAttendanceDate(this.value)"
+                    class="border-2 border-slate-200 rounded-lg px-3 py-1 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500">
+            </div>
+        `;
         document.getElementById('grades-modal').classList.remove('hidden');
         document.getElementById('btn-print-report').classList.add('hidden');
         document.getElementById('btn-save-all').classList.remove('hidden');
         document.getElementById('btn-save-all').onclick = () => this.saveAllAttendance();
         
-        this.state.students = await API.get(`/teachers/courses/${id}/students`);
+        await this.loadAttendanceForDate();
+    },
+
+    async changeAttendanceDate(newDate) {
+        this.state.attendanceDate = newDate;
+        await this.loadAttendanceForDate();
+    },
+
+    async loadAttendanceForDate() {
+        this.state.students = await API.get(`/teachers/courses/${this.state.selectedCourse}/students`);
+        const existing = await API.get(`/teachers/courses/${this.state.selectedCourse}/attendance?date=${this.state.attendanceDate}`);
+        
+        // Map existing attendance back to students
+        const existingMap = {};
+        existing.forEach(r => existingMap[r.student_id] = r.status);
+        
+        this.state.tempAttendance = {}; // Reset temporary selections
+        this.state.students.forEach(s => {
+            s.currentAttendance = existingMap[s.institutional_id] || 'presente';
+        });
+
         this.renderAttendanceList();
     },
 
@@ -300,14 +329,14 @@ Views.teacher = {
                 <td class="text-center py-6">
                     <select onchange="Views.teacher.updateTempAttendance(${s.matricula_id}, this.value)" 
                         class="bg-white border-2 border-slate-300 rounded-xl p-3 font-bold text-sm outline-none focus:border-indigo-600 shadow-sm">
-                        <option value="presente">Presente</option>
-                        <option value="ausente_no_justificada">Ausente Injustificada</option>
-                        <option value="ausente_justificada">Ausente Justificada</option>
+                        <option value="presente" ${s.currentAttendance === 'presente' ? 'selected' : ''}>Presente</option>
+                        <option value="ausente_no_justificada" ${s.currentAttendance === 'ausente_no_justificada' ? 'selected' : ''}>Ausente Injustificada</option>
+                        <option value="ausente_justificada" ${s.currentAttendance === 'ausente_justificada' ? 'selected' : ''}>Ausente Justificada</option>
                     </select>
                 </td>
                 <td class="text-right py-6 pr-4">
                     <button onclick="Views.teacher.saveSingleAttendance(${s.matricula_id})" class="p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
-                        <i data-lucide="check" class="w-5 h-5"></i>
+                        <i data-lucide="save" class="w-5 h-5"></i>
                     </button>
                 </td>
             </tr>
@@ -317,13 +346,26 @@ Views.teacher = {
 
     updateTempAttendance(mId, val) { this.state.tempAttendance[mId] = val; },
     async saveSingleAttendance(mId) {
-        const val = this.state.tempAttendance[mId] || 'presente';
+        const student = this.state.students.find(s => s.matricula_id === mId);
+        const val = this.state.tempAttendance[mId] || student.currentAttendance;
         await API.post('/teachers/update-attendance', { 
             matricula_id: mId, 
             tipo: val, 
-            fecha: new Date().toISOString().split('T')[0] 
+            fecha: this.state.attendanceDate
         });
         Toast.show('Asistencia guardada', 'success');
+    },
+    async saveAllAttendance() {
+        for (const s of this.state.students) {
+            const val = this.state.tempAttendance[s.matricula_id] || s.currentAttendance;
+            await API.post('/teachers/update-attendance', {
+                matricula_id: s.matricula_id,
+                tipo: val,
+                fecha: this.state.attendanceDate
+            });
+        }
+        Toast.show('Asistencia de todo el grupo guardada', 'success');
+        this.closeModal();
     },
 
     async triggerImport(type) {
