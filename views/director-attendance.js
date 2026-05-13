@@ -19,6 +19,23 @@ function pctPresentes(presentes, total) {
   return Math.round((p / t) * 100);
 }
 
+/** Texto normalizado para buscar (minúsculas, sin acentos). */
+function normalizeForSearch(s) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+function buildStudentSearchHaystack(st) {
+  const n = normalizeForSearch(st.nombres);
+  const a = normalizeForSearch(st.apellidos);
+  const c = normalizeForSearch(st.codigo);
+  const id = normalizeForSearch(String(st.codigo ?? ''));
+  return [n, a, `${n} ${a}`, `${a} ${n}`, c, id].filter(Boolean).join(' | ');
+}
+
 const UMBRAL_INASISTENCIAS = 3;
 
 /**
@@ -148,12 +165,14 @@ Views['director-attendance'] = {
               const pid = st.persona_id;
               const pct = pctPresentes(st.presentes, st.total_registros);
               const alert = st.alerta_alta_inasistencia;
+              const searchHay = escapeHtml(buildStudentSearchHaystack(st));
               return `
             <button type="button"
               class="director-att-card text-left rounded-2xl border p-4 transition-all hover:shadow-md hover:border-indigo-200 bg-white group ${
                 alert ? 'border-red-200 ring-1 ring-red-100' : 'border-slate-200'
               }"
               data-persona-id="${pid}"
+              data-search-hay="${searchHay}"
               data-student-label="${escapeHtml(st.nombres + ' ' + st.apellidos)}">
               <div class="flex items-start justify-between gap-2 mb-2">
                 <div class="min-w-0">
@@ -216,11 +235,33 @@ Views['director-attendance'] = {
           </section>
 
           <div class="card-premium border-slate-200">
-            <div class="px-6 py-5 border-b border-slate-100">
-              <h3 class="text-lg font-black text-slate-900">Estudiantes</h3>
-              <p class="text-sm text-slate-500">Orden: mayor número de inasistencias primero</p>
+            <div class="px-6 py-5 border-b border-slate-100 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <h3 class="text-lg font-black text-slate-900">Estudiantes</h3>
+                <p class="text-sm text-slate-500">Orden: mayor número de inasistencias primero</p>
+              </div>
+              ${
+                students.length === 0
+                  ? ''
+                  : `
+              <div class="w-full lg:max-w-md flex flex-col gap-2">
+                <label for="director-att-search" class="text-[10px] font-black uppercase tracking-widest text-slate-400">Buscar en el plantel</label>
+                <div class="relative">
+                  <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                  <input id="director-att-search" type="search" autocomplete="off" placeholder="Nombre, apellido o código…" aria-describedby="director-att-search-hint"
+                    class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400" />
+                  <button type="button" id="director-att-search-clear" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/80 hidden" title="Limpiar" aria-label="Limpiar búsqueda">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                  </button>
+                </div>
+                <p id="director-att-search-hint" class="text-xs text-slate-500"><span id="director-att-search-count"></span> · Filtra entre los asignados a tu programa.</p>
+              </div>`
+              }
             </div>
-            <div class="p-6">${grid}</div>
+            <div class="p-6">
+              <p id="director-att-no-results" class="hidden text-center text-slate-500 py-12 font-medium">Ningún estudiante coincide con la búsqueda.</p>
+              <div id="director-att-grid-wrap">${grid}</div>
+            </div>
           </div>
 
           <div id="director-att-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" aria-hidden="true">
@@ -245,6 +286,11 @@ Views['director-attendance'] = {
 
   afterRender() {
     const root = document.getElementById('director-attendance-root');
+    const searchInput = document.getElementById('director-att-search');
+    const searchClear = document.getElementById('director-att-search-clear');
+    const searchCount = document.getElementById('director-att-search-count');
+    const noResults = document.getElementById('director-att-no-results');
+    const gridWrap = document.getElementById('director-att-grid-wrap');
     const modal = document.getElementById('director-att-modal');
     const modalBody = document.getElementById('director-att-modal-body');
     const modalTitle = document.getElementById('director-att-modal-title');
@@ -306,6 +352,52 @@ Views['director-attendance'] = {
         })
         .join('');
     }
+
+    function applyStudentSearch() {
+      const cards = root?.querySelectorAll('.director-att-card') || [];
+      const total = cards.length;
+      if (!total) return;
+
+      const raw = searchInput?.value || '';
+      const q = normalizeForSearch(raw);
+      const tokens = q.split(/\s+/).filter(Boolean);
+
+      let visible = 0;
+      cards.forEach((card) => {
+        const hay = normalizeForSearch(card.getAttribute('data-search-hay') || '');
+        const match =
+          tokens.length === 0 ? true : tokens.every((t) => hay.includes(t));
+        card.classList.toggle('hidden', !match);
+        if (match) visible += 1;
+      });
+
+      if (searchCount) {
+        searchCount.textContent =
+          tokens.length === 0
+            ? `Mostrando ${total} estudiante(s)`
+            : `Mostrando ${visible} de ${total}`;
+      }
+      if (noResults && gridWrap) {
+        const showEmpty = tokens.length > 0 && visible === 0;
+        noResults.classList.toggle('hidden', !showEmpty);
+        gridWrap.classList.toggle('hidden', showEmpty);
+      }
+      if (searchClear) {
+        searchClear.classList.toggle('hidden', !raw.trim());
+      }
+    }
+
+    searchInput?.addEventListener('input', () => {
+      applyStudentSearch();
+      lucide.createIcons();
+    });
+    searchClear?.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      applyStudentSearch();
+      searchInput?.focus();
+      lucide.createIcons();
+    });
+    applyStudentSearch();
 
     btnClose?.addEventListener('click', closeModal);
     modal?.addEventListener('click', (e) => {
