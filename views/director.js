@@ -58,15 +58,17 @@ Views.director = {
                                             </div>
                                         </td>
                                         <td class="px-6 py-6">
-                                            <div class="space-y-3">
-                                                ${(st.courses || []).length === 0 ? '<span class="text-xs text-slate-400">Sin cursos registrados</span>' : 
+                                            <div class="flex flex-wrap gap-2">
+                                                ${(st.courses || []).length === 0 ? '<span class="text-[10px] text-slate-400 font-bold bg-slate-50 px-2 py-1 rounded">Sin cursos</span>' : 
                                                 st.courses.map(c => `
-                                                    <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                                    <div class="inline-flex items-center gap-2 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl hover:border-indigo-200 hover:bg-indigo-50/50 transition-colors">
                                                         <div class="flex flex-col">
-                                                            <span class="text-xs font-bold text-slate-700">${c.materia}</span>
-                                                            <span class="text-[9px] text-indigo-600 uppercase font-black">NRC: ${c.nrc || 'N/A'}</span>
+                                                            <span class="text-[10px] font-black text-slate-700 truncate max-w-[120px]" title="${c.materia}">${c.materia}</span>
+                                                            <span class="text-[8px] text-slate-400 uppercase font-bold">NRC: ${c.nrc || 'N/A'}</span>
                                                         </div>
-                                                        <span class="text-sm font-black ${c.promedio < 3 ? 'text-red-500' : 'text-slate-900'}">${c.promedio.toFixed(1)}</span>
+                                                        <div class="pl-2 border-l border-slate-200">
+                                                            <span class="text-[11px] font-black ${c.promedio < 3 ? 'text-red-500' : 'text-emerald-600'}">${c.promedio.toFixed(1)}</span>
+                                                        </div>
                                                     </div>
                                                 `).join('')}
                                             </div>
