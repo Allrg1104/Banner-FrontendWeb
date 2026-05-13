@@ -18,6 +18,7 @@ import '../views/director.js';
 import '../views/director-attendance.js';
 import '../views/financial.js';
 import '../views/registro.js';
+import '../views/salones.js';
 import '../views/requests.js';
 import '../views/admin.js?v=18';
 import '../views/change-password.js';
@@ -54,6 +55,7 @@ const Layout = {
                         ${user.rol === 'director' || user.rol === 'decano' ? this.navItem('/director', 'bar-chart-3', 'Métricas SIS') : ''}
                         ${user.rol === 'director' || user.rol === 'decano' ? this.navItem('/director-asistencia', 'clipboard-check', 'Asistencias') : ''}
                         ${user.rol === 'registro' ? this.navItem('/registro', 'users', 'Gestión Usuarios') : ''}
+                        ${user.rol === 'registro' ? this.navItem('/salones', 'map', 'Sedes y Salones') : ''}
                         ${user.rol === 'financiero' ? this.navItem('/financial', 'wallet', 'Cartera') : ''}
                         ${user.rol === 'admin' ? this.navItem('/admin', 'shield-check', 'Admin Usuarios') : ''}
                         
@@ -136,6 +138,7 @@ const Layout = {
             '#/director': 'Analítica SIS',
             '#/director-asistencia': 'Asistencias programa',
             '#/registro': 'Registro Académico',
+            '#/salones': 'Sedes y Salones',
             '#/financial': 'Módulo Financiero',
             '#/admin': 'Admin Usuarios',
             '#/requests': 'Gestión de Solicitudes',
@@ -176,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '/director': 'director',
         '/director-asistencia': 'director-attendance',
         '/registro': 'registro',
+        '/salones': 'salones',
         '/requests': 'requests',
         '/financial': 'financial',
         '/admin': 'admin',
