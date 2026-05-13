@@ -298,11 +298,19 @@ Views.admin = {
         this.showUserModal(user);
     },
 
-    showUserModal(user = null) {
+    async showUserModal(user = null) {
         const isEdit = !!user;
         const modalContent = document.getElementById('modal-content');
         const container = document.getElementById('modal-container');
         if (!modalContent || !container) return;
+
+        // Cargar programas
+        let programas = [];
+        try {
+            programas = await API.get('/admin/programas');
+        } catch (e) {
+            console.error('No se pudieron cargar los programas', e);
+        }
 
         // Expand modal for this view
         modalContent.className = 'bg-white rounded-[2.5rem] shadow-2xl max-w-6xl w-full transform transition-all overflow-hidden border border-slate-100';
@@ -478,7 +486,7 @@ Views.admin = {
                         </div>
                         <div>
                             <label class="label-premium">Rol Institucional</label>
-                            <select id="m-rol" class="input-premium bg-white">
+                            <select id="m-rol" class="input-premium bg-white" onchange="Views.admin.toggleProgramaField()">
                                 <option value="estudiante" ${user?.rol === 'estudiante' ? 'selected' : ''}>Estudiante</option>
                                 <option value="docente" ${user?.rol === 'docente' ? 'selected' : ''}>Docente</option>
                                 <option value="admin" ${user?.rol === 'admin' ? 'selected' : ''}>Admin TI</option>
@@ -486,6 +494,14 @@ Views.admin = {
                                 <option value="financiero" ${user?.rol === 'financiero' ? 'selected' : ''}>Gestión Financiera</option>
                                 <option value="director" ${user?.rol === 'director' ? 'selected' : ''}>Director / Decano</option>
                             </select>
+                        </div>
+                        <div id="programa-container" style="display: ${(user?.rol === 'estudiante' || user?.rol === 'director') ? 'block' : 'none'};">
+                            <label class="label-premium text-indigo-600">Programa Académico Asignado</label>
+                            <select id="m-programa-id" class="input-premium bg-indigo-50 border-indigo-200">
+                                <option value="">(Seleccionar Programa)</option>
+                                ${programas.map(p => `<option value="${p.id}" ${user?.programa_id === p.id ? 'selected' : ''}>${p.nombre}</option>`).join('')}
+                            </select>
+                            <p class="text-[9px] text-slate-400 mt-2 font-bold uppercase tracking-widest">Para estudiantes y directores.</p>
                         </div>
                     </div>
                 </div>
@@ -599,6 +615,7 @@ Views.admin = {
                 const user = e.target.value.trim().toLowerCase();
                 emailInput.value = user ? `${user}@unicatolica.edu.co` : '';
             });
+            Views.admin.toggleProgramaField(); // Ensure correct initial state
         }
 
         document.getElementById('user-form').onsubmit = async (e) => {
@@ -639,7 +656,8 @@ Views.admin = {
                 telefono: document.getElementById('m-telefono').value,
                 fecha_nacimiento: document.getElementById('m-nacimiento-text').value,
                 metadata: metadataObj,
-                activo: document.getElementById('m-activo').checked
+                activo: document.getElementById('m-activo').checked,
+                programa_id: document.getElementById('m-programa-id') ? document.getElementById('m-programa-id').value : null
             };
 
             if (!isEdit) {
@@ -694,6 +712,19 @@ Views.admin = {
             this.updateBulkState();
         } catch (err) {
             Toast.error(err.message);
+        }
+    },
+
+    toggleProgramaField() {
+        const rol = document.getElementById('m-rol').value;
+        const container = document.getElementById('programa-container');
+        if (container) {
+            if (rol === 'estudiante' || rol === 'director') {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+                document.getElementById('m-programa-id').value = '';
+            }
         }
     }
 };
