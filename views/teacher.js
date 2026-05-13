@@ -135,8 +135,8 @@ Views.teacher = {
                             <div><h3 id="modal-course-title" class="text-2xl font-black text-slate-900"></h3><p id="modal-course-subtitle" class="text-sm text-slate-500"></p></div>
                             <button onclick="Views.teacher.closeModal()" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center"><i data-lucide="x" class="w-5 h-5"></i></button>
                         </div>
-                        <div class="p-8 overflow-y-auto flex-grow">
-                            <table class="w-full text-left"><thead id="modal-table-header"></thead><tbody id="students-list-body"></tbody></table>
+                        <div class="p-8 overflow-y-auto flex-grow relative">
+                            <table class="w-full text-left"><thead id="modal-table-header" class="sticky top-0 bg-white z-10"></thead><tbody id="students-list-body"></tbody></table>
                         </div>
                         <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
                              <button id="btn-print-report" onclick="Views.teacher.downloadCourseReport()" class="btn-premium btn-ghost text-xs font-black hidden">Generar Acta</button>
@@ -338,10 +338,20 @@ Views.teacher = {
             return;
         }
 
-        const dateHeaders = report.dates.map(d => `<th class="text-center pb-4 px-2 whitespace-nowrap"><div class="-rotate-45 transform origin-bottom-left text-[9px] translate-y-4 translate-x-2">${d}</div></th>`).join('');
+        const dateHeaders = report.dates.map(d => {
+            const dateObj = new Date(d);
+            const day = dateObj.getUTCDate();
+            const month = dateObj.toLocaleString('es-ES', { month: 'short', timeZone: 'UTC' });
+            return `<th class="text-center pb-4 px-2 whitespace-nowrap min-w-[60px]">
+                        <div class="flex flex-col items-center">
+                            <span class="text-sm font-black text-slate-800">${day}</span>
+                            <span class="text-[9px] uppercase font-bold text-indigo-600 tracking-widest">${month}</span>
+                        </div>
+                    </th>`;
+        }).join('');
         
         header.innerHTML = `
-            <tr class="text-xs font-black text-slate-500 uppercase border-b-2 border-slate-200 h-20">
+            <tr class="text-xs font-black text-slate-500 uppercase border-b-2 border-slate-200">
                 <th class="pb-4 pl-4 text-left align-bottom">Estudiante</th>
                 ${dateHeaders}
                 <th class="text-center pb-4 pr-4 align-bottom whitespace-nowrap">Total Faltas</th>
