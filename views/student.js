@@ -293,6 +293,9 @@ Views.student = {
         const modal = document.getElementById('modal-container');
         const content = document.getElementById('modal-content');
 
+        // Expandir el modal para la vista detallada
+        content.className = "bg-white rounded-3xl shadow-2xl max-w-4xl w-full transform transition-all overflow-hidden";
+
         // Cargando...
         content.innerHTML = `<div class="p-20 text-center font-bold text-slate-400">Cargando detalles de ${materia}...</div>`;
         modal.classList.remove('hidden');
