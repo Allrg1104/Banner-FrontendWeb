@@ -10,10 +10,19 @@ Views.registro = {
     selectedUser: null,
     isEditingFicha: false,
     isAddingFamiliar: false,
+    salonesData: [],
+    cursosActivos: [],
+    selectedSede: null,
+    selectedBloque: null,
+    selectedSalon: null,
+    salonOcupacion: [],
 
     async render() {
         if (this.users.length === 0 && !this.searchQuery) {
             await this.loadUsers();
+        }
+        if (this.salonesData.length === 0) {
+            await this.loadSalonesData();
         }
 
         const filteredUsers = this.users.filter(u =>
@@ -40,6 +49,10 @@ Views.registro = {
                         class="px-8 py-4 text-sm font-black uppercase tracking-widest transition-all ${this.currentTab === 'directorio' ? 'border-b-4 border-[#fab720] text-[#032840]' : 'text-slate-400 hover:text-slate-600'}">
                         Directorio Central
                     </button>
+                    <button onclick="Views.registro.setTab('salones')" 
+                        class="px-8 py-4 text-sm font-black uppercase tracking-widest transition-all ${this.currentTab === 'salones' ? 'border-b-4 border-[#fab720] text-[#032840]' : 'text-slate-400 hover:text-slate-600'}">
+                        Infraestructura y Salones
+                    </button>
                     <button onclick="Views.registro.setTab('solicitudes')" 
                         class="px-8 py-4 text-sm font-black uppercase tracking-widest transition-all ${this.currentTab === 'solicitudes' ? 'border-b-4 border-[#fab720] text-[#032840]' : 'text-slate-400 hover:text-slate-600'}">
                         Solicitudes Pendientes
@@ -48,7 +61,7 @@ Views.registro = {
 
                 <!-- Tab Content -->
                 <div id="registro-content" class="min-h-[600px]">
-                    ${this.currentTab === 'directorio' ? this.renderDirectorio(filteredUsers) : this.renderSolicitudes()}
+                    ${this.currentTab === 'directorio' ? this.renderDirectorio(filteredUsers) : this.currentTab === 'salones' ? this.renderSalones() : this.renderSolicitudes()}
                 </div>
             </div>
 
@@ -231,6 +244,9 @@ Views.registro = {
                                 Guardar Ficha Master
                             </button>
                         ` : `
+                            <button onclick="Views.registro.resetUserPassword(${user.id}, '${user.username}')" class="btn-premium bg-slate-100 text-slate-600 px-6 py-4 shadow-sm hover:scale-105 transition-all text-xs font-black uppercase tracking-widest">
+                                <i data-lucide="key" class="w-4 h-4 inline-block mr-2"></i> Cambiar Contraseña
+                            </button>
                             <button onclick="Views.registro.editFicha()" class="btn-premium bg-[#fab720] text-[#032840] px-10 py-4 shadow-xl hover:scale-105 transition-all text-xs font-black uppercase tracking-widest">
                                 <i data-lucide="edit-3" class="w-4 h-4 inline-block mr-2"></i> Editar Información
                             </button>
@@ -657,6 +673,240 @@ Views.registro = {
 
     afterRender() {
         lucide.createIcons();
+    },
+
+    async loadUsers() {
+        try {
+            this.users = await API.get('/registro/users');
+        } catch (e) {
+            Toast.error('Fallo en sincronización institutional');
+        }
+    },
+
+    async loadSalonesData() {
+        try {
+            this.salonesData = await API.get('/registro/salones/estructura');
+            this.cursosActivos = await API.get('/registro/cursos/activos');
+            if (this.salonesData.length > 0 && !this.selectedSede) {
+                this.selectedSede = this.salonesData[0];
+            }
+        } catch (e) {
+            console.error("Error loading salones:", e);
+        }
+    },
+
+    async loadSalonOcupacion(salonId) {
+        try {
+            this.salonOcupacion = await API.get('/registro/salones/'+salonId+'/ocupacion');
+            this.reRender();
+        } catch(e) {
+            console.error(e);
+        }
+    },
+
+    async assignSalon(cursoId, salonId, horario) {
+        try {
+            await API.post('/registro/salones/asignar', { curso_id: cursoId, salon_id: salonId, horario });
+            Toast.success('Asignación guardada correctamente');
+            await this.loadSalonesData();
+            await this.loadSalonOcupacion(salonId);
+        } catch (e) {
+            Toast.error(e.message || 'Error al asignar salón');
+        }
+    },
+
+    async resetUserPassword(userId, username) {
+        if (username === 'admin.ti') {
+            Toast.error('Restricción: No se puede editar la contraseña del usuario Admin.TI');
+            return;
+        }
+        const newPass = prompt("Ingresa la nueva contraseña temporal (mín 8 chars):", "Academia2026!");
+        if (!newPass) return;
+
+        try {
+            await API.post('/registro/reset-password-user', { userId, newPassword: newPass });
+            Toast.success('Contraseña reseteada con éxito');
+        } catch (err) {
+            Toast.error(err.message || 'Error al resetear contraseña');
+        }
+    },
+
+    selectSede(sedeId) {
+        this.selectedSede = this.salonesData.find(s => s.id === sedeId);
+        this.selectedBloque = null;
+        this.selectedSalon = null;
+        this.reRender();
+    },
+
+    selectBloque(bloqueId) {
+        if (!this.selectedSede) return;
+        this.selectedBloque = this.selectedSede.bloques.find(b => b.id === bloqueId);
+        this.selectedSalon = null;
+        this.reRender();
+    },
+
+    selectSalon(salonId) {
+        if (!this.selectedBloque) return;
+        this.selectedSalon = this.selectedBloque.salones.find(s => s.id === salonId);
+        this.loadSalonOcupacion(salonId);
+    },
+
+    renderSalones() {
+        if (!this.salonesData || this.salonesData.length === 0) {
+            return `<div class="p-10 text-center text-slate-500">Cargando infraestructura...</div>`;
+        }
+
+        const sedes = this.salonesData;
+        const bloques = this.selectedSede ? this.selectedSede.bloques : [];
+        const salones = this.selectedBloque ? this.selectedBloque.salones : [];
+
+        // Generar grilla de horarios
+        const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const horas = ['7:30 - 9:30', '9:30 - 11:30', '11:30 - 13:30', '14:00 - 16:00', '16:00 - 18:00', '18:30 - 20:30', '19:30 - 21:30'];
+
+        let rightPanelContent = `
+            <div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60 p-12 text-center">
+                <i data-lucide="map" class="w-16 h-16 mb-4"></i>
+                <p class="font-bold text-lg">Selecciona un salón para ver su estado</p>
+                <p class="text-xs uppercase tracking-widest mt-2">Navega por Sede > Bloque > Salón</p>
+            </div>
+        `;
+
+        if (this.selectedSalon) {
+            rightPanelContent = `
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-6">
+                        <div>
+                            <h3 class="text-2xl font-black text-[#032840]">${this.selectedSalon.nombre}</h3>
+                            <p class="text-xs text-slate-500 font-bold uppercase tracking-widest">${this.selectedSede.nombre} • ${this.selectedBloque.nombre}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${this.salonOcupacion.length > 0 
+                                ? `<span class="badge bg-red-50 text-red-600 border-red-100 uppercase text-[10px] font-black px-3 py-1"><div class="w-2 h-2 rounded-full bg-red-500 inline-block mr-2"></div>Ocupado Parcialmente</span>`
+                                : `<span class="badge bg-emerald-50 text-emerald-600 border-emerald-100 uppercase text-[10px] font-black px-3 py-1"><div class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-2"></div>Libre</span>`}
+                        </div>
+                    </div>
+
+                    <!-- Asignación Form -->
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Nueva Asignación</h4>
+                        <div class="flex gap-4">
+                            <select id="asig-curso" class="input-premium py-3 text-sm flex-grow">
+                                <option value="">Selecciona una asignatura (Curso)...</option>
+                                ${this.cursosActivos.map(c => `
+                                    <option value="${c.id}">${c.nrc} - ${c.asignatura} (${c.nombres} ${c.apellidos})</option>
+                                `).join('')}
+                            </select>
+                            <select id="asig-horario" class="input-premium py-3 text-sm w-48">
+                                <option value="">Franja Horaria...</option>
+                                ${horas.flatMap(h => dias.map(d => `<option value="${d.substring(0,3)} ${h}">${d.substring(0,3)} ${h}</option>`)).join('')}
+                                <option value="Lun-Mié 8:00-10:00">Lun-Mié 8:00-10:00</option>
+                                <option value="Mar-Jue 10:00-12:00">Mar-Jue 10:00-12:00</option>
+                                <option value="Vie 8:00-12:00">Vie 8:00-12:00</option>
+                                <option value="Lun-Mié 14:00-16:00">Lun-Mié 14:00-16:00</option>
+                            </select>
+                            <button onclick="Views.registro.assignSalon(document.getElementById('asig-curso').value, ${this.selectedSalon.id}, document.getElementById('asig-horario').value)" class="btn-premium bg-[#032840] text-white px-6 py-3 text-xs">Asignar</button>
+                        </div>
+                    </div>
+
+                    <!-- Horarios Grid -->
+                    <div class="space-y-4">
+                        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Ocupación Actual</h4>
+                        ${this.salonOcupacion.length > 0 ? `
+                            <div class="grid grid-cols-1 gap-3">
+                                ${this.salonOcupacion.map(oc => `
+                                    <div class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl hover:border-indigo-200 transition-colors">
+                                        <div class="flex items-center gap-4">
+                                            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-xs text-center leading-tight">
+                                                ${oc.horario.replace(' ', '<br>')}
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-slate-800">${oc.asignatura} <span class="text-xs text-slate-400 font-medium ml-2">NRC: ${oc.nrc}</span></div>
+                                                <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Prof: ${oc.nombres} ${oc.apellidos}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : `
+                            <div class="text-center p-8 bg-white border border-slate-200 border-dashed rounded-2xl text-slate-400">
+                                Ningún curso asignado actualmente a este salón.
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in h-[700px]">
+                
+                <!-- Explorador de Infraestructura -->
+                <div class="col-span-1 flex flex-col gap-4">
+                    
+                    <!-- Sedes -->
+                    <div class="card-premium p-6 bg-white space-y-4 shadow-sm border-slate-200">
+                        <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-[#032840] border-b border-slate-100 pb-2">1. Sedes</h4>
+                        <div class="flex flex-wrap gap-2">
+                            ${sedes.map(s => `
+                                <button onclick="Views.registro.selectSede(${s.id})" class="px-4 py-2 rounded-lg text-xs font-bold transition-all ${this.selectedSede?.id === s.id ? 'bg-[#032840] text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'}">
+                                    ${s.nombre}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Bloques -->
+                    <div class="card-premium p-6 bg-white space-y-4 shadow-sm border-slate-200 flex-grow flex flex-col ${!this.selectedSede ? 'opacity-50 pointer-events-none' : ''}">
+                        <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-[#032840] border-b border-slate-100 pb-2">2. Bloques</h4>
+                        <div class="grid grid-cols-2 gap-2 overflow-y-auto custom-scrollbar flex-grow pr-2">
+                            ${bloques.map(b => `
+                                <button onclick="Views.registro.selectBloque(${b.id})" class="px-3 py-3 rounded-lg text-xs font-bold text-left transition-all flex justify-between items-center ${this.selectedBloque?.id === b.id ? 'bg-[#fab720] text-[#032840] shadow-md border-transparent' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'}">
+                                    <span class="truncate">${b.nombre}</span>
+                                    <span class="text-[9px] opacity-60 ml-2">${b.salones.length}</span>
+                                </button>
+                            `).join('')}
+                            ${bloques.length === 0 ? '<div class="col-span-2 text-xs text-slate-400 p-2 text-center">Seleccione una sede</div>' : ''}
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Salones y Detalles -->
+                <div class="col-span-1 lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    
+                    <!-- Lista de Salones -->
+                    <div class="card-premium p-6 bg-white shadow-sm border-slate-200 flex flex-col ${!this.selectedBloque ? 'opacity-50 pointer-events-none' : ''}">
+                        <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-[#032840] border-b border-slate-100 pb-2 mb-4">3. Salones</h4>
+                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto custom-scrollbar pr-2 pb-4">
+                            ${salones.map(s => {
+                                // Basic occupation heuristic based on this.cursosActivos matching salon_id
+                                const occ = this.cursosActivos.some(c => c.salon_id === s.id);
+                                return `
+                                <button onclick="Views.registro.selectSalon(${s.id})" class="relative p-3 rounded-xl border text-left transition-all ${this.selectedSalon?.id === s.id ? 'border-[#032840] bg-slate-50 ring-2 ring-[#032840]/10 shadow-md' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <i data-lucide="door-open" class="w-4 h-4 ${occ ? 'text-red-400' : 'text-emerald-400'}"></i>
+                                        <span class="font-bold text-xs text-slate-800 truncate">${s.nombre}</span>
+                                    </div>
+                                    <div class="text-[9px] font-black uppercase tracking-widest ${occ ? 'text-red-500' : 'text-emerald-500'}">
+                                        ${occ ? 'Asignado' : 'Disponible'}
+                                    </div>
+                                </button>
+                                `;
+                            }).join('')}
+                            ${salones.length === 0 ? '<div class="col-span-2 text-xs text-slate-400 p-2 text-center">Seleccione un bloque</div>' : ''}
+                        </div>
+                    </div>
+
+                    <!-- Panel de Detalles del Salón -->
+                    <div class="card-premium p-8 bg-white shadow-xl ring-1 ring-slate-100 flex flex-col">
+                        ${rightPanelContent}
+                    </div>
+
+                </div>
+
+            </div>
+        `;
     },
 
     async loadUsers() {
