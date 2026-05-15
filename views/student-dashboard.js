@@ -66,9 +66,9 @@ Views['student-dashboard'] = {
                         <div class="text-3xl font-black text-slate-900">${studentData?.resumen?.semestre_actual || '1'}°</div>
                         <div class="text-[10px] text-indigo-400 font-bold mt-2">Nivel de formación</div>
                     </div>
-                    <div class="card-premium bg-slate-900 text-white border-none">
-                        <div class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Estatus Académico</div>
-                        <div class="text-2xl font-black ${(studentData?.resumen?.promedio_periodo >= 4.0) ? 'text-[#10b981]' : 'text-[#fab720]'}">${(studentData?.resumen?.promedio_periodo >= 4.0) ? 'SOBRESALIENTE' : 'ACTIVO'}</div>
+                    <div class="card-premium bg-white border-l-4 border-[#10b981]">
+                        <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Estatus Académico</div>
+                        <div class="text-2xl font-black text-slate-900">${(studentData?.resumen?.promedio_periodo >= 4.0) ? 'SOBRESALIENTE' : 'ACTIVO'}</div>
                         <div class="text-[10px] text-slate-400 font-bold mt-2">Periodo ${activePeriod.nombre}</div>
                     </div>
                 </div>
@@ -160,9 +160,9 @@ Views['student-dashboard'] = {
         });
 
         const attendanceColors = attendance.map(a => {
-            if (a >= 80) return '#10b981'; // Vibrant Emerald 500
-            if (a >= 60) return '#f59e0b'; // Amber 500
-            return '#ef4444'; // Rose 500
+            if (a >= 80) return { fill: 'rgba(16, 185, 129, 0.1)', stroke: '#10b981' }; 
+            if (a >= 60) return { fill: 'rgba(245, 158, 11, 0.1)', stroke: '#f59e0b' };
+            return { fill: 'rgba(239, 68, 68, 0.1)', stroke: '#ef4444' };
         });
 
         const ctxAttendance = document.getElementById('attendanceChart').getContext('2d');
@@ -173,8 +173,10 @@ Views['student-dashboard'] = {
                 datasets: [{
                     label: 'Asistencia %',
                     data: attendance,
-                    backgroundColor: attendanceColors,
-                    borderRadius: 8
+                    backgroundColor: attendanceColors.map(c => c.fill),
+                    borderColor: attendanceColors.map(c => c.stroke),
+                    borderWidth: 2,
+                    borderRadius: 6
                 }]
             },
             options: {
