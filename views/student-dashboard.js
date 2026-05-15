@@ -41,13 +41,13 @@ Views['student-dashboard'] = {
                             <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Periodo Lectivo</span>
                             
                             <!-- Custom Premium Dropdown -->
-                            <div class="relative mt-1" id="custom-period-dropdown">
+                            <div class="relative mt-1 z-[100]" id="custom-period-dropdown">
                                 <button class="dropdown-trigger flex items-center justify-between w-44 bg-slate-50 border border-slate-200 text-[11px] font-black text-indigo-600 rounded-lg py-1.5 px-3 hover:border-indigo-300 transition-all focus:outline-none">
                                     <span class="truncate">${activePeriod.nombre} ${activePeriod.activo ? '(Actual)' : ''}</span>
                                     <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-indigo-400 transition-transform"></i>
                                 </button>
                                 
-                                <div class="dropdown-menu hidden absolute right-0 mt-2 w-52 bg-white border border-slate-100 rounded-xl shadow-2xl z-50 overflow-hidden animate-slide-up">
+                                <div class="dropdown-menu hidden absolute right-0 mt-2 w-52 bg-white border border-slate-100 rounded-xl shadow-2xl z-[100] overflow-hidden animate-slide-up">
                                     <div class="p-2 text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50">Seleccionar Periodo</div>
                                     ${periods?.map(p => `
                                         <div class="dropdown-item px-4 py-3 text-[11px] font-bold ${p.id == activePeriod.id ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600'} hover:bg-slate-50 hover:text-indigo-600 cursor-pointer transition-all flex items-center justify-between group" data-value="${p.id}">
