@@ -1,5 +1,7 @@
 Views.salones = {
-    salonesData: [],
+    sedes: [],
+    bloques: [],
+    salones: [],
     cursosActivos: [],
     selectedSede: null,
     selectedBloque: null,
@@ -7,13 +9,16 @@ Views.salones = {
     salonOcupacion: [],
 
     async render() {
-        if (this.salonesData.length === 0) {
-            await this.loadSalonesData();
+        if (this.sedes.length === 0) {
+            await this.loadSedes();
+        }
+        if (this.cursosActivos.length === 0) {
+            this.cursosActivos = await API.get('/registro/cursos/activos');
         }
 
-        const sedes = this.salonesData;
-        const bloques = this.selectedSede ? this.selectedSede.bloques : [];
-        const salones = this.selectedBloque ? this.selectedBloque.salones : [];
+        const sedes = this.sedes;
+        const bloques = this.bloques;
+        const salones = this.salones;
 
         // Horarios para asignación
         const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -60,7 +65,7 @@ Views.salones = {
                                             <div class="w-2 h-2 rounded-full ${this.selectedBloque?.id === b.id ? 'bg-[#fab720]' : 'bg-slate-300 group-hover:bg-[#fab720]'} transition-colors"></div>
                                             <span class="truncate">${b.nombre}</span>
                                         </div>
-                                        <span class="text-[9px] opacity-60">${b.salones.length} S.</span>
+                                        <span class="text-[9px] opacity-60">${b.total_salones} S.</span>
                                     </button>
                                 `).join('')}
                                 ${bloques.length === 0 ? '<div class="text-xs text-slate-400 p-8 text-center border border-dashed rounded-3xl">Seleccione una sede para ver los bloques</div>' : ''}
@@ -146,8 +151,12 @@ Views.salones = {
                                 <!-- Form -->
                                 <div class="md:col-span-2 card-premium p-8 bg-white shadow-xl border-[#032840]/10 ring-1 ring-[#032840]/5">
                                     <div class="mb-6">
-                                        <h3 class="text-2xl font-black text-[#032840]">${this.selectedSalon.nombre}</h3>
-                                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Programar Nuevo Curso</p>
+                                        <img src="https://images.unsplash.com/photo-1577412647305-991150c7d163?auto=format&fit=crop&q=80&w=400&h=200" alt="Salón" class="w-full h-32 object-cover rounded-xl mb-4 shadow-sm">
+                                        <div class="flex items-center justify-between">
+                                            <h3 class="text-2xl font-black text-[#032840]">${this.selectedSalon.nombre}</h3>
+                                            <span class="text-[10px] font-bold bg-slate-100 px-2 py-1 rounded text-slate-500 uppercase">${this.selectedSalon.tipo || 'Aula'}</span>
+                                        </div>
+                                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2">Detalles del Espacio y Asignación</p>
                                     </div>
                                     
                                     <div class="space-y-4">
@@ -223,13 +232,25 @@ Views.salones = {
         `;
     },
 
-    async loadSalonesData() {
+    async loadSedes() {
         try {
-            this.salonesData = await API.get('/registro/salones/estructura');
-            this.cursosActivos = await API.get('/registro/cursos/activos');
-            if (this.salonesData.length > 0 && !this.selectedSede) {
-                this.selectedSede = this.salonesData[0];
-            }
+            this.sedes = await API.get('/registro/sedes');
+        } catch (e) {
+            console.error("Error loading sedes:", e);
+        }
+    },
+
+    async loadBloques(sedeId) {
+        try {
+            this.bloques = await API.get('/registro/sedes/'+sedeId+'/bloques');
+        } catch (e) {
+            console.error("Error loading bloques:", e);
+        }
+    },
+
+    async loadSalones(bloqueId) {
+        try {
+            this.salones = await API.get('/registro/bloques/'+bloqueId+'/salones');
         } catch (e) {
             console.error("Error loading salones:", e);
         }
@@ -252,34 +273,40 @@ Views.salones = {
         try {
             await API.post('/registro/salones/asignar', { curso_id: cursoId, salon_id: salonId, horario });
             Toast.success('Asignación guardada correctamente');
-            await this.loadSalonesData();
+            this.cursosActivos = await API.get('/registro/cursos/activos');
             await this.loadSalonOcupacion(salonId);
         } catch (e) {
             Toast.error(e.message || 'Error al asignar salón');
         }
     },
 
-    selectSede(sedeId) {
+    async selectSede(sedeId) {
         if (!sedeId) {
             this.selectedSede = null;
+            this.bloques = [];
         } else {
-            this.selectedSede = this.salonesData.find(s => s.id === sedeId);
+            this.selectedSede = this.sedes.find(s => s.id === sedeId);
+            await this.loadBloques(sedeId);
         }
         this.selectedBloque = null;
+        this.salones = [];
         this.selectedSalon = null;
+        this.salonOcupacion = [];
         this.reRender();
     },
 
-    selectBloque(bloqueId) {
+    async selectBloque(bloqueId) {
         if (!this.selectedSede) return;
-        this.selectedBloque = this.selectedSede.bloques.find(b => b.id === bloqueId);
+        this.selectedBloque = this.bloques.find(b => b.id === bloqueId);
+        await this.loadSalones(bloqueId);
         this.selectedSalon = null;
+        this.salonOcupacion = [];
         this.reRender();
     },
 
     selectSalon(salonId) {
         if (!this.selectedBloque) return;
-        this.selectedSalon = this.selectedBloque.salones.find(s => s.id === salonId);
+        this.selectedSalon = this.salones.find(s => s.id === salonId);
         this.loadSalonOcupacion(salonId);
     },
 
