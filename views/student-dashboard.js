@@ -160,7 +160,7 @@ Views['student-dashboard'] = {
         });
 
         const attendanceColors = attendance.map(a => {
-            if (a >= 80) return '#10b981'; // Green
+            if (a >= 80) return '#047857'; // Emerald-700 (Director theme)
             if (a >= 60) return '#f59e0b'; // Orange
             return '#ef4444'; // Red
         });
