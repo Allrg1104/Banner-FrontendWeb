@@ -135,8 +135,11 @@ Views.teacher = {
                             <div><h3 id="modal-course-title" class="text-2xl font-black text-slate-900"></h3><p id="modal-course-subtitle" class="text-sm text-slate-500"></p></div>
                             <button onclick="Views.teacher.closeModal()" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center"><i data-lucide="x" class="w-5 h-5"></i></button>
                         </div>
-                        <div class="p-8 overflow-y-auto flex-grow relative">
-                            <table class="w-full text-left"><thead id="modal-table-header" class="sticky top-0 bg-white z-10"></thead><tbody id="students-list-body"></tbody></table>
+                        <div class="px-8 pb-8 overflow-y-auto flex-grow relative">
+                            <table class="w-full text-left border-separate border-spacing-0">
+                                <thead id="modal-table-header" class="sticky top-0 z-20"></thead>
+                                <tbody id="students-list-body"></tbody>
+                            </table>
                         </div>
                         <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
                              <button id="btn-print-report" onclick="Views.teacher.downloadCourseReport()" class="btn-premium btn-ghost text-xs font-black hidden">Generar Acta</button>
@@ -184,12 +187,12 @@ Views.teacher = {
         const body = document.getElementById('students-list-body');
         const header = document.getElementById('modal-table-header');
         header.innerHTML = `
-            <tr class="text-xs font-black text-slate-500 uppercase tracking-widest border-b-2 border-slate-200">
-                <th class="pb-6 pl-4">Nombre del Estudiante</th>
-                <th class="text-center pb-6">Primer Parcial</th>
-                <th class="text-center pb-6">Segundo Parcial</th>
-                <th class="text-center pb-6">Examen Final</th>
-                <th class="text-right pb-6 pr-4">Guardar</th>
+            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th class="py-6 pl-4 bg-white border-b-2 border-slate-100">Nombre del Estudiante</th>
+                <th class="text-center py-6 bg-white border-b-2 border-slate-100">Primer Parcial</th>
+                <th class="text-center py-6 bg-white border-b-2 border-slate-100">Segundo Parcial</th>
+                <th class="text-center py-6 bg-white border-b-2 border-slate-100">Examen Final</th>
+                <th class="text-right py-6 pr-4 bg-white border-b-2 border-slate-100">Acción</th>
             </tr>`;
         
         body.innerHTML = this.state.students.map((s, index) => `
@@ -294,10 +297,10 @@ Views.teacher = {
         const body = document.getElementById('students-list-body');
         const header = document.getElementById('modal-table-header');
         header.innerHTML = `
-            <tr class="text-xs font-black text-slate-500 uppercase border-b-2 border-slate-200">
-                <th class="pb-6 pl-4 text-left">#</th>
-                <th class="pb-6 pl-4 text-left">Estudiante</th>
-                <th class="text-right pb-6 pr-4">ID Institucional</th>
+            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th class="py-6 pl-4 text-left bg-white border-b-2 border-slate-100">#</th>
+                <th class="py-6 pl-4 text-left bg-white border-b-2 border-slate-100">Estudiante</th>
+                <th class="text-right py-6 pr-4 bg-white border-b-2 border-slate-100">ID Institucional</th>
             </tr>`;
         
         body.innerHTML = this.state.students.map((s, index) => `
@@ -338,23 +341,21 @@ Views.teacher = {
             return;
         }
 
-        const dateHeaders = report.dates.map(d => {
-            const dateObj = new Date(d);
-            const day = dateObj.getUTCDate();
-            const month = dateObj.toLocaleString('es-ES', { month: 'short', timeZone: 'UTC' });
-            return `<th class="text-center pb-4 px-2 whitespace-nowrap min-w-[60px]">
-                        <div class="flex flex-col items-center">
-                            <span class="text-sm font-black text-slate-800">${day}</span>
-                            <span class="text-[9px] uppercase font-bold text-indigo-600 tracking-widest">${month}</span>
-                        </div>
-                    </th>`;
-        }).join('');
-        
         header.innerHTML = `
-            <tr class="text-xs font-black text-slate-500 uppercase border-b-2 border-slate-200">
-                <th class="pb-4 pl-4 text-left align-bottom">Estudiante</th>
-                ${dateHeaders}
-                <th class="text-center pb-4 pr-4 align-bottom whitespace-nowrap">Total Faltas</th>
+            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th class="py-6 pl-4 text-left align-bottom bg-white border-b-2 border-slate-100">Estudiante</th>
+                ${report.dates.map(d => {
+                    const dateObj = new Date(d);
+                    const day = dateObj.getUTCDate();
+                    const month = dateObj.toLocaleString('es-ES', { month: 'short', timeZone: 'UTC' });
+                    return `<th class="text-center py-6 px-2 whitespace-nowrap min-w-[60px] bg-white border-b-2 border-slate-100">
+                                <div class="flex flex-col items-center">
+                                    <span class="text-sm font-black text-slate-800">${day}</span>
+                                    <span class="text-[9px] uppercase font-bold text-indigo-600 tracking-widest">${month}</span>
+                                </div>
+                            </th>`;
+                }).join('')}
+                <th class="text-center py-6 pr-4 align-bottom whitespace-nowrap bg-white border-b-2 border-slate-100">Total Faltas</th>
             </tr>
         `;
 
@@ -406,10 +407,10 @@ Views.teacher = {
         const body = document.getElementById('students-list-body');
         const header = document.getElementById('modal-table-header');
         header.innerHTML = `
-            <tr class="text-xs font-black text-slate-500 uppercase border-b-2 border-slate-200">
-                <th class="pb-6 pl-4">Estudiante</th>
-                <th class="text-center pb-6">Estado de Asistencia</th>
-                <th class="text-right pb-6 pr-4">Acción</th>
+            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th class="py-6 pl-4 bg-white border-b-2 border-slate-100">Estudiante</th>
+                <th class="text-center py-6 bg-white border-b-2 border-slate-100">Estado de Asistencia</th>
+                <th class="text-right py-6 pr-4 bg-white border-b-2 border-slate-100">Acción</th>
             </tr>`;
         
         body.innerHTML = this.state.students.map((s, index) => `
