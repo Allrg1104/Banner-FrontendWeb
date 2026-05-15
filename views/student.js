@@ -328,7 +328,7 @@ Views.student = {
 
             const attendancePercent = m?.asistencia?.porcentaje || 0;
             const statusLabel = attendancePercent > 80 ? 'Excelente' : attendancePercent > 60 ? 'Regular' : 'En Riesgo';
-            const statusColor = attendancePercent > 80 ? 'text-emerald-400' : attendancePercent > 60 ? 'text-amber-400' : 'text-rose-400';
+            const statusColor = attendancePercent > 80 ? 'text-[#047857]' : attendancePercent > 60 ? 'text-amber-400' : 'text-rose-400';
 
             content.innerHTML = `
                 <div class="p-10 animate-fade-in">

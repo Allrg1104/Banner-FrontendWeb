@@ -68,7 +68,7 @@ Views['student-dashboard'] = {
                     </div>
                     <div class="card-premium bg-slate-900 text-white border-none">
                         <div class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Estatus Académico</div>
-                        <div class="text-2xl font-black text-[#fab720]">${(studentData?.resumen?.promedio_periodo >= 4.0) ? 'SOBRESALIENTE' : 'ACTIVO'}</div>
+                        <div class="text-2xl font-black ${(studentData?.resumen?.promedio_periodo >= 4.0) ? 'text-[#10b981]' : 'text-[#fab720]'}">${(studentData?.resumen?.promedio_periodo >= 4.0) ? 'SOBRESALIENTE' : 'ACTIVO'}</div>
                         <div class="text-[10px] text-slate-400 font-bold mt-2">Periodo ${activePeriod.nombre}</div>
                     </div>
                 </div>
