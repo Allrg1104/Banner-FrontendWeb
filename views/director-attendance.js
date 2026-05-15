@@ -101,6 +101,13 @@ Views['director-attendance'] = {
       const data = await loadDirectorAttendancePayload();
       const programName = data.my_program ? data.my_program.nombre : 'Sin programa asignado';
       const students = data.students || [];
+      
+      students.sort((a, b) => {
+        const nameA = `${a.nombres || ''} ${a.apellidos || ''}`.trim().toLowerCase();
+        const nameB = `${b.nombres || ''} ${b.apellidos || ''}`.trim().toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+      
       const summary = data.summary || {};
       const umbral = data.umbral_alerta ?? 3;
       const alertCount = summary.estudiantes_con_alerta ?? 0;
@@ -238,7 +245,7 @@ Views['director-attendance'] = {
             <div class="px-6 py-5 border-b border-slate-100 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <h3 class="text-lg font-black text-slate-900">Estudiantes</h3>
-                <p class="text-sm text-slate-500">Orden: mayor número de inasistencias primero</p>
+                <p class="text-sm text-slate-500">Orden: Alfabético ascendente (A-Z)</p>
               </div>
               ${
                 students.length === 0

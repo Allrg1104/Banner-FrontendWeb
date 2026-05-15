@@ -17,6 +17,7 @@ import '../views/student.js';
 import '../views/teacher.js';
 import '../views/director.js';
 import '../views/director-attendance.js';
+import '../views/director-evaluations.js';
 import '../views/financial.js';
 import '../views/registro.js';
 import '../views/salones.js';
@@ -56,6 +57,7 @@ const Layout = {
                         ${user.rol === 'docente' ? this.navItem('/teacher-services', 'briefcase', 'Servicios Docente') : ''}
                         ${user.rol === 'director' || user.rol === 'decano' ? this.navItem('/director', 'bar-chart-3', 'Métricas SIS') : ''}
                         ${user.rol === 'director' || user.rol === 'decano' ? this.navItem('/director-asistencia', 'clipboard-check', 'Asistencias') : ''}
+                        ${user.rol === 'director' || user.rol === 'decano' ? this.navItem('/director-evaluations', 'star', 'Evaluación Docente') : ''}
                         ${user.rol === 'registro' ? this.navItem('/registro', 'users', 'Gestión Usuarios') : ''}
                         ${user.rol === 'registro' ? this.navItem('/salones', 'map', 'Sedes y Salones') : ''}
                         ${user.rol === 'financiero' ? this.navItem('/financial', 'wallet', 'Cartera') : ''}
@@ -139,6 +141,7 @@ const Layout = {
             '#/teacher': 'Gestión de Cursos',
             '#/director': 'Analítica SIS',
             '#/director-asistencia': 'Asistencias programa',
+            '#/director-evaluations': 'Evaluación Docente',
             '#/registro': 'Registro Académico',
             '#/salones': 'Sedes y Salones',
             '#/financial': 'Módulo Financiero',
@@ -181,6 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '/teacher': 'teacher',
         '/director': 'director',
         '/director-asistencia': 'director-attendance',
+        '/director-evaluations': 'director-evaluations',
         '/registro': 'registro',
         '/salones': 'salones',
         '/requests': 'requests',
