@@ -364,7 +364,7 @@ Views.teacher = {
                 const record = s.history.find(h => h.fecha === date);
                 let icon = '<span class="text-slate-300">-</span>';
                 if (record) {
-                    if (record.tipo === 'presente') icon = '<i data-lucide="check" class="w-4 h-4 text-[#047857] mx-auto"></i>';
+                    if (record.tipo === 'presente') icon = '<i data-lucide="check" class="w-4 h-4 text-[#10b981] mx-auto"></i>';
                     else if (record.tipo === 'ausente_no_justificada') { icon = '<i data-lucide="x" class="w-4 h-4 text-rose-500 mx-auto"></i>'; totalFaltas++; }
                     else if (record.tipo === 'ausente_justificada') { icon = '<i data-lucide="minus-circle" class="w-4 h-4 text-amber-500 mx-auto"></i>'; totalFaltas++; }
                 }
