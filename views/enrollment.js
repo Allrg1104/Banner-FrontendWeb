@@ -212,7 +212,9 @@ Views['enrollment'] = {
                 <div class="course-block ${colorClass} pointer-events-auto" 
                     style="top: ${top}px; height: ${height}px; left: ${left}; width: calc(${width} - 4px); margin-left: 2px;">
                     <div class="truncate">${course.materia}</div>
-                    <div class="text-[7px] opacity-80 mt-1">${course.salon || 'Salón por definir'}</div>
+                    <div class="text-[7px] opacity-80 mt-1">
+                        ${course.salon ? `[${course.sede || ''}] ${course.salon} (${course.bloque || ''})` : 'Ubicación por definir'}
+                    </div>
                     <div class="text-[7px] opacity-80">${course.nrc}</div>
                 </div>
             `;
@@ -273,7 +275,10 @@ Views['enrollment'] = {
                 </div>
                 <div class="flex items-center gap-4 text-[9px] text-slate-500 font-bold uppercase tracking-tight">
                     <div class="flex items-center gap-1.5"><i data-lucide="clock" class="w-3 h-3"></i> ${c.horario}</div>
-                    <div class="flex items-center gap-1.5"><i data-lucide="map-pin" class="w-3 h-3"></i> ${c.salon || 'Salón Pendiente'}</div>
+                    <div class="flex items-center gap-1.5">
+                        <i data-lucide="map-pin" class="w-3 h-3"></i> 
+                        ${c.salon ? `${c.sede || ''} - ${c.salon} (${c.bloque || ''})` : 'Salón Pendiente'}
+                    </div>
                 </div>
             </div>
         `).join('');
