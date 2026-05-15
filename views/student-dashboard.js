@@ -56,9 +56,9 @@ Views['student-dashboard'] = {
                     </div>
                     <div class="card-premium bg-white border-l-4 border-[#fab720]">
                         <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Créditos Inscritos en el Semestre</div>
-                        <div class="text-3xl font-black text-slate-900">${studentData?.matriculas?.length * 3 || 0} / 18</div>
+                        <div class="text-3xl font-black text-slate-900">${studentData?.resumen?.creditos_periodo || 0} / 18</div>
                         <div class="w-full h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
-                            <div class="h-full bg-[#fab720]" style="width: ${Math.min((studentData?.matriculas?.length / 6) * 100, 100)}%"></div>
+                            <div class="h-full bg-[#fab720]" style="width: ${Math.min((studentData?.resumen?.creditos_periodo / 18) * 100, 100)}%"></div>
                         </div>
                     </div>
                     <div class="card-premium bg-white border-l-4 border-indigo-400">
