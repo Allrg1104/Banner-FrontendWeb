@@ -44,11 +44,17 @@ Views.registro = {
                         class="px-8 py-4 text-sm font-black uppercase tracking-widest transition-all ${this.currentTab === 'solicitudes' ? 'border-b-4 border-[#fab720] text-[#032840]' : 'text-slate-400 hover:text-slate-600'}">
                         Solicitudes Pendientes
                     </button>
+                    <button onclick="Views.registro.setTab('cursos')" 
+                        class="px-8 py-4 text-sm font-black uppercase tracking-widest transition-all ${this.currentTab === 'cursos' ? 'border-b-4 border-[#fab720] text-[#032840]' : 'text-slate-400 hover:text-slate-600'}">
+                        Gestión Académica
+                    </button>
                 </div>
 
                 <!-- Tab Content -->
                 <div id="registro-content" class="min-h-[600px]">
-                    ${this.currentTab === 'directorio' ? this.renderDirectorio(filteredUsers) : this.renderSolicitudes()}
+                    ${this.currentTab === 'directorio' ? this.renderDirectorio(filteredUsers) : 
+                      this.currentTab === 'solicitudes' ? this.renderSolicitudes() : 
+                      this.renderCursos()}
                 </div>
             </div>
 
@@ -162,6 +168,99 @@ Views.registro = {
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        `;
+    },
+
+    renderCursos() {
+        return `
+            <div class="space-y-8 animate-fade-in">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-2xl font-black text-slate-900">Oferta Académica</h3>
+                        <p class="text-sm text-slate-500">Crea y gestiona los cursos para el periodo actual.</p>
+                    </div>
+                    <button onclick="Views.registro.openCreateCourse()" class="btn-premium bg-[#032840] text-white px-8 py-4 rounded-2xl shadow-xl shadow-slate-200">
+                        <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Crear Nuevo Curso
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="cursos-list-container">
+                    <div class="col-span-full py-20 text-center">
+                        <div class="loader-small mx-auto"></div>
+                        <p class="text-slate-400 text-xs font-black uppercase tracking-widest mt-4">Cargando cursos activos...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Course Modal -->
+            <div id="course-modal" class="fixed inset-0 bg-[#032840]/60 backdrop-blur-md z-[110] hidden flex items-center justify-center p-4">
+                <div class="bg-white rounded-[32px] w-full max-w-2xl p-10 shadow-2xl space-y-8">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-6">
+                        <h3 class="text-2xl font-black text-slate-900">Configurar Nueva Asignatura</h3>
+                        <button onclick="Views.registro.closeCourseModal()" class="text-slate-300 hover:text-red-500 transition-colors">
+                            <i data-lucide="x" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+
+                    <form id="create-course-form" class="space-y-6" onsubmit="event.preventDefault(); Views.registro.handleCreateCourse();">
+                        <div class="grid grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Asignatura (Materia)</label>
+                                <select id="cc-materia" class="input-premium py-4 text-sm w-full" required>
+                                    <option value="">Cargando materias...</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Docente Asignado</label>
+                                <select id="cc-docente" class="input-premium py-4 text-sm w-full" required>
+                                    <option value="">Cargando docentes...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">NRC (Código de Curso)</label>
+                                <input type="text" id="cc-nrc" placeholder="Ej: 14273" class="input-premium py-4 text-sm" required>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Salón / Aula</label>
+                                <input type="text" id="cc-salon" placeholder="Ej: A-101 o Sistemas 1" class="input-premium py-4 text-sm" required>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Configuración de Horario</label>
+                            <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
+                                <div class="flex gap-2">
+                                    ${['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => `
+                                        <label class="flex-1">
+                                            <input type="checkbox" name="cc-days" value="${d}" class="hidden peer">
+                                            <div class="py-3 text-center rounded-xl bg-white border border-slate-200 text-[10px] font-black text-slate-400 peer-checked:bg-[#032840] peer-checked:text-white peer-checked:border-[#032840] transition-all cursor-pointer">
+                                                ${d}
+                                            </div>
+                                        </label>
+                                    `).join('')}
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-[8px] font-black text-slate-400 uppercase mb-1 block">Hora Inicio</label>
+                                        <input type="time" id="cc-start" value="18:30" class="input-premium py-3 text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="text-[8px] font-black text-slate-400 uppercase mb-1 block">Hora Fin</label>
+                                        <input type="time" id="cc-end" value="21:30" class="input-premium py-3 text-sm">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full btn-premium bg-emerald-600 text-white py-5 rounded-2xl shadow-xl shadow-emerald-100 font-black uppercase tracking-widest">
+                            Publicar Curso en Oferta Académica
+                        </button>
+                    </form>
                 </div>
             </div>
         `;
@@ -660,6 +759,9 @@ Views.registro = {
 
     afterRender() {
         lucide.createIcons();
+        if (this.currentTab === 'cursos') {
+            this.loadCursos();
+        }
     },
 
     async loadUsers() {
@@ -688,10 +790,116 @@ Views.registro = {
 
     setTab(tab) {
         this.currentTab = tab;
-        this.render();
-        // Since we are in the same view object, we need to trigger the DOM update manually if we don't use the router
-        document.getElementById('view-mount').innerHTML = 'Cargando...';
         this.reRender();
+    },
+
+    async loadCursos() {
+        try {
+            const cursos = await API.get('/registro/cursos/activos');
+            const container = document.getElementById('cursos-list-container');
+            if (!container) return;
+
+            if (cursos.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-20 text-center">
+                        <i data-lucide="book-x" class="w-16 h-16 text-slate-100 mx-auto mb-4"></i>
+                        <p class="text-slate-400 text-xs font-black uppercase tracking-widest">No hay cursos creados para el periodo actual</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = cursos.map(c => `
+                    <div class="card-premium bg-white p-6 border-none shadow-lg hover:shadow-xl transition-all group">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 rounded-xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                <i data-lucide="book" class="w-5 h-5"></i>
+                            </div>
+                            <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">NRC: ${c.nrc}</span>
+                        </div>
+                        <h4 class="text-base font-black text-slate-900 mb-1 truncate">${c.asignatura}</h4>
+                        <p class="text-xs text-slate-500 font-medium mb-4">${c.nombres} ${c.apellidos}</p>
+                        <div class="space-y-2 pt-4 border-t border-slate-50">
+                            <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                                <i data-lucide="clock" class="w-3 h-3"></i> ${c.horario}
+                            </div>
+                            <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                                <i data-lucide="map-pin" class="w-3 h-3 text-slate-300"></i> ${c.salon_id ? 'Salón Asignado' : 'Pendiente Aula'}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            lucide.createIcons();
+        } catch (e) {
+            console.error(e);
+        }
+    },
+
+    async openCreateCourse() {
+        document.getElementById('course-modal').classList.remove('hidden');
+        lucide.createIcons();
+        
+        // Load materias and docentes
+        try {
+            const [materias, docentes] = await Promise.all([
+                API.get('/registro/materias'),
+                API.get('/registro/docentes')
+            ]);
+
+            const matSelect = document.getElementById('cc-materia');
+            const docSelect = document.getElementById('cc-docente');
+
+            matSelect.innerHTML = '<option value="">Seleccione Materia</option>' + 
+                materias.map(m => `<option value="${m.id}">${m.nombre} (${m.codigo})</option>`).join('');
+            
+            docSelect.innerHTML = '<option value="">Seleccione Docente</option>' + 
+                docentes.map(d => `<option value="${d.id}">${d.nombres} ${d.apellidos}</option>`).join('');
+        } catch (e) {
+            Toast.error('Error al cargar datos académicos');
+        }
+    },
+
+    closeCourseModal() {
+        document.getElementById('course-modal').classList.add('hidden');
+    },
+
+    async handleCreateCourse() {
+        const materia_id = document.getElementById('cc-materia').value;
+        const docente_id = document.getElementById('cc-docente').value;
+        const nrc = document.getElementById('cc-nrc').value;
+        const salon = document.getElementById('cc-salon').value;
+        const start = document.getElementById('cc-start').value;
+        const end = document.getElementById('cc-end').value;
+
+        const selectedDays = Array.from(document.querySelectorAll('input[name="cc-days"]:checked')).map(cb => cb.value);
+
+        if (selectedDays.length === 0) {
+            Toast.error('Seleccione al menos un día');
+            return;
+        }
+
+        // Format: "Lun-Mié 18:30-21:30" or "Lun,Mar 18:30-21:30"
+        let daysStr = "";
+        if (selectedDays.length === 2 && (
+            (selectedDays[0] === 'Lun' && selectedDays[1] === 'Mié') ||
+            (selectedDays[0] === 'Mar' && selectedDays[1] === 'Jue')
+        )) {
+            daysStr = `${selectedDays[0]}-${selectedDays[1]}`;
+        } else {
+            daysStr = selectedDays.join(',');
+        }
+
+        const horario = `${daysStr} ${start}-${end}`;
+
+        try {
+            const res = await API.post('/registro/cursos', { materia_id, docente_id, nrc, salon, horario });
+            if (res.success) {
+                Toast.success('¡Curso publicado exitosamente!');
+                this.closeCourseModal();
+                this.loadCursos();
+            }
+        } catch (e) {
+            Toast.error(e.error || 'Error al crear el curso');
+        }
     },
 
     async reRender() {
