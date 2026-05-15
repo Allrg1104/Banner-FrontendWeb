@@ -11,6 +11,7 @@ import './router.js?v=18';
 // Views
 import '../views/login.js';
 import '../views/student-dashboard.js?v=18';
+import '../views/enrollment.js';
 import '../views/profile.js';
 import '../views/student.js';
 import '../views/teacher.js';
@@ -49,6 +50,7 @@ const Layout = {
                         <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 px-4">Menú Principal</div>
                         
                         ${user.rol === 'estudiante' ? this.navItem('/dashboard', 'layout-dashboard', 'Dashboard') : this.navItem(this.getUserDashboardPath(), 'layout-dashboard', 'Dashboard')}
+                        ${user.rol === 'estudiante' ? this.navItem('/enrollment', 'plus-circle', 'Inscripciones') : ''}
                         ${user.rol === 'estudiante' ? this.navItem('/student', 'book-open', 'Mi Academia') : ''}
                         ${user.rol === 'docente' ? this.navItem('/teacher', 'presentation', 'Mis Cursos') : ''}
                         ${user.rol === 'docente' ? this.navItem('/teacher-services', 'briefcase', 'Servicios Docente') : ''}
@@ -171,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '/': 'login',
         '/login': 'login',
         '/dashboard': 'student-dashboard',
+        '/enrollment': 'enrollment',
         '/profile': 'profile',
         '/student': 'student',
         '/teacher-dashboard': 'teacher-dashboard',
