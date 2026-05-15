@@ -48,26 +48,26 @@ Views['student-dashboard'] = {
                 <!-- KPI Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div class="card-premium bg-white border-l-4 border-indigo-600">
-                        <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Promedio Periodo</div>
+                        <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Promedio Actual del Semestre</div>
                         <div id="kpi-promedio" class="text-3xl font-black text-slate-900">${studentData?.resumen?.promedio_periodo?.toFixed(2) || '0.00'}</div>
                         <div class="flex items-center gap-1 text-[10px] text-indigo-500 font-bold mt-2">
                             <i data-lucide="award" class="w-3 h-3"></i> Rendimiento Actual
                         </div>
                     </div>
                     <div class="card-premium bg-white border-l-4 border-[#fab720]">
-                        <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Créditos Inscritos</div>
+                        <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Créditos Inscritos en el Semestre</div>
                         <div class="text-3xl font-black text-slate-900">${studentData?.matriculas?.length * 3 || 0} / 18</div>
                         <div class="w-full h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
                             <div class="h-full bg-[#fab720]" style="width: ${Math.min((studentData?.matriculas?.length / 6) * 100, 100)}%"></div>
                         </div>
                     </div>
                     <div class="card-premium bg-white border-l-4 border-indigo-400">
-                        <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Semestre Actual</div>
+                        <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Ubicación de Semestre Actual</div>
                         <div class="text-3xl font-black text-slate-900">${studentData?.resumen?.semestre_actual || '1'}°</div>
                         <div class="text-[10px] text-indigo-400 font-bold mt-2">Nivel de formación</div>
                     </div>
                     <div class="card-premium bg-white border-l-4 border-[#10b981]">
-                        <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Estatus Académico</div>
+                        <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Estado Académico Vigente</div>
                         <div class="text-2xl font-black text-slate-900">${(studentData?.resumen?.promedio_periodo >= 4.0) ? 'SOBRESALIENTE' : 'ACTIVO'}</div>
                         <div class="text-[10px] text-slate-400 font-bold mt-2">Periodo ${activePeriod.nombre}</div>
                     </div>
@@ -78,7 +78,7 @@ Views['student-dashboard'] = {
                     <div class="card-premium bg-white">
                         <h3 class="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
                             <i data-lucide="line-chart" class="text-indigo-600 w-5 h-5"></i>
-                            Evolución de Promedio
+                            Evolución de Calificaciones
                         </h3>
                         <div class="h-[300px]">
                             <canvas id="progressChart"></canvas>
@@ -88,7 +88,7 @@ Views['student-dashboard'] = {
                     <div class="card-premium bg-white">
                         <h3 class="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
                             <i data-lucide="bar-chart-2" class="text-[#fab720] w-5 h-5"></i>
-                            Asistencia por Materia
+                            Seguimiento de Asistencia por Curso
                         </h3>
                         <div class="h-[300px]">
                             <canvas id="attendanceChart"></canvas>
