@@ -10,10 +10,14 @@ Views.registro = {
     selectedUser: null,
     isEditingFicha: false,
     isAddingFamiliar: false,
+    solicitudes: null,
 
     async render() {
         if (this.users.length === 0 && !this.searchQuery) {
             await this.loadUsers();
+        }
+        if (this.currentTab === 'solicitudes' && !this.solicitudes) {
+            await this.loadSolicitudes();
         }
 
         const filteredUsers = this.users.filter(u =>
@@ -158,14 +162,26 @@ Views.registro = {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="px-10 py-6 font-bold text-slate-900">Santiago Espinosa</td>
-                                <td class="px-10 py-6 text-slate-600">Certificado de Notas</td>
-                                <td class="px-10 py-6"><span class="badge bg-red-50 text-red-600 border-red-100">Alta</span></td>
-                                <td class="px-10 py-6 text-right">
-                                    <button class="btn-premium bg-indigo-50 text-indigo-600 px-4 py-1.5 text-[10px]">Procesar</button>
-                                </td>
-                            </tr>
+                            ${(this.solicitudes || []).length === 0 ? `
+                                <tr><td colspan="4" class="px-10 py-10 text-center text-slate-400 italic">No hay solicitudes pendientes</td></tr>
+                            ` : (this.solicitudes || []).map(s => `
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-10 py-6 font-bold text-slate-900">${s.nombres} ${s.apellidos}</td>
+                                    <td class="px-10 py-6 text-slate-600">${s.tipo} <br><span class="text-[10px] text-slate-400">${new Date(s.fecha).toLocaleDateString()}</span></td>
+                                    <td class="px-10 py-6">
+                                        <span class="badge ${s.estado === 'pendiente' ? 'bg-red-50 text-red-600 border-red-100' : s.estado === 'en_proceso' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'} uppercase text-[9px] px-2 py-1">
+                                            ${s.estado.replace('_', ' ')}
+                                        </span>
+                                    </td>
+                                    <td class="px-10 py-6 text-right">
+                                        ${s.estado === 'pendiente' ? `
+                                            <button onclick="Views.registro.procesarSolicitud(${s.id})" class="btn-premium bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all px-4 py-1.5 text-[10px]">Procesar</button>
+                                        ` : `
+                                            <span class="text-[10px] text-slate-400 uppercase font-bold">Atendida</span>
+                                        `}
+                                    </td>
+                                </tr>
+                            `).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -769,6 +785,26 @@ Views.registro = {
             this.users = await API.get('/registro/users');
         } catch (e) {
             Toast.error('Fallo en sincronización institutional');
+        }
+    },
+
+    async loadSolicitudes() {
+        try {
+            this.solicitudes = await API.get('/registro/solicitudes');
+        } catch (e) {
+            Toast.error('Fallo cargando solicitudes');
+            this.solicitudes = [];
+        }
+    },
+
+    async procesarSolicitud(id) {
+        try {
+            await API.put('/registro/solicitudes/'+id+'/procesar', {});
+            Toast.success('Solicitud en proceso');
+            await this.loadSolicitudes();
+            this.reRender();
+        } catch(e) {
+            Toast.error('No se pudo procesar la solicitud');
         }
     },
 
