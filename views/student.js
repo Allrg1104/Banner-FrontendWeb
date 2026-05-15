@@ -328,12 +328,17 @@ Views.student = {
 
             const inj = m?.asistencia?.injustificadas || 0;
             const jus = m?.asistencia?.justificadas || 0;
+            const total = m?.asistencia?.total || 0;
 
             let statusLabel = 'Asistencia Estable';
             let statusColor = 'text-[#10b981]';
             let alertMsg = 'Mantienes un buen registro de asistencia.';
 
-            if (inj >= 3 || jus >= 5) {
+            if (total === 0) {
+                statusLabel = 'Sin Registros';
+                statusColor = 'text-slate-400';
+                alertMsg = 'Aún no se han registrado asistencias para este curso.';
+            } else if (inj >= 3 || jus >= 5) {
                 statusLabel = 'MATERIA PERDIDA';
                 statusColor = 'text-rose-600';
                 alertMsg = inj >= 3 ? 'Has alcanzado el límite de 3 fallas injustificadas.' : 'Has alcanzado el límite de 5 fallas justificadas.';
@@ -386,7 +391,7 @@ Views.student = {
                             <div class="card-premium bg-slate-900 text-white border-none shadow-xl p-6">
                                 <h4 class="text-sm font-black text-slate-500 uppercase tracking-widest mb-6 border-b border-white/10 pb-2">Asistencia Real</h4>
                                 <div class="flex items-end gap-3 mb-4">
-                                    <div class="text-4xl font-black">${statusLabel === 'MATERIA PERDIDA' ? 'REPROBADO' : m?.asistencia?.porcentaje + '%'}</div>
+                                    <div class="text-4xl font-black">${total === 0 ? '--' : statusLabel === 'MATERIA PERDIDA' ? 'REPROBADO' : m?.asistencia?.porcentaje + '%'}</div>
                                     <div class="text-[10px] ${statusColor} font-bold mb-1 flex items-center gap-1 uppercase tracking-widest">
                                         ${statusLabel}
                                     </div>
