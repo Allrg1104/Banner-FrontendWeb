@@ -31,7 +31,7 @@ Views['student-dashboard'] = {
         return `
             <div class="space-y-8 animate-fade-in">
                 <!-- Dashboard Header -->
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-[100]">
                     <div>
                         <h2 class="text-3xl font-black text-slate-900 tracking-tight">Panel Académico Dinámico</h2>
                         <p class="text-slate-500 font-medium">Visualiza tu rendimiento y evolución histórica</p>
