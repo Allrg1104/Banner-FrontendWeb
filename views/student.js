@@ -326,9 +326,22 @@ Views.student = {
             const c2 = subjectGrades.find(g => g.componente === 'Parcial 2')?.valor || '--';
             const c3 = subjectGrades.find(g => g.componente === 'Examen Final')?.valor || '--';
 
-            const attendancePercent = m?.asistencia?.porcentaje || 0;
-            const statusLabel = attendancePercent > 80 ? 'Excelente' : attendancePercent > 60 ? 'Regular' : 'En Riesgo';
-            const statusColor = attendancePercent > 80 ? 'text-[#10b981]' : attendancePercent > 60 ? 'text-amber-400' : 'text-rose-400';
+            const inj = m?.asistencia?.injustificadas || 0;
+            const jus = m?.asistencia?.justificadas || 0;
+
+            let statusLabel = 'Asistencia Estable';
+            let statusColor = 'text-[#10b981]';
+            let alertMsg = 'Mantienes un buen registro de asistencia.';
+
+            if (inj >= 3 || jus >= 5) {
+                statusLabel = 'MATERIA PERDIDA';
+                statusColor = 'text-rose-600';
+                alertMsg = inj >= 3 ? 'Has alcanzado el límite de 3 fallas injustificadas.' : 'Has alcanzado el límite de 5 fallas justificadas.';
+            } else if (inj === 2 || jus === 4) {
+                statusLabel = 'ALERTA DE RIESGO';
+                statusColor = 'text-orange-500';
+                alertMsg = inj === 2 ? 'Atención: Tienes 2 fallas injustificadas. Una más y perderás la materia.' : 'Atención: Tienes 4 fallas justificadas. Una más y perderás la materia.';
+            }
 
             content.innerHTML = `
                 <div class="p-10 animate-fade-in">
@@ -373,12 +386,23 @@ Views.student = {
                             <div class="card-premium bg-slate-900 text-white border-none shadow-xl p-6">
                                 <h4 class="text-sm font-black text-slate-500 uppercase tracking-widest mb-6 border-b border-white/10 pb-2">Asistencia Real</h4>
                                 <div class="flex items-end gap-3 mb-4">
-                                    <div class="text-4xl font-black">${attendancePercent}%</div>
-                                    <div class="text-xs ${statusColor} font-bold mb-1 flex items-center gap-1 uppercase tracking-widest">
+                                    <div class="text-4xl font-black">${statusLabel === 'MATERIA PERDIDA' ? 'REPROBADO' : m?.asistencia?.porcentaje + '%'}</div>
+                                    <div class="text-[10px] ${statusColor} font-bold mb-1 flex items-center gap-1 uppercase tracking-widest">
                                         ${statusLabel}
                                     </div>
                                 </div>
-                                <p class="text-slate-400 text-[10px] leading-relaxed uppercase font-bold tracking-widest">Calculado sobre registros docentes.</p>
+                                <p class="text-slate-400 text-[10px] leading-relaxed uppercase font-bold tracking-widest">${alertMsg}</p>
+                                <div class="mt-4 flex gap-4 text-[10px] font-black uppercase tracking-widest">
+                                    <div class="flex-1 p-2 bg-white/5 rounded-lg border border-white/10">
+                                        <div class="text-slate-500">Injustificadas</div>
+                                        <div class="${inj >= 3 ? 'text-rose-500' : inj === 2 ? 'text-orange-500' : 'text-emerald-500'}">${inj} / 3</div>
+                                    </div>
+                                    <div class="flex-1 p-2 bg-white/5 rounded-lg border border-white/10">
+                                        <div class="text-slate-500">Justificadas</div>
+                                        <div class="${jus >= 5 ? 'text-rose-500' : jus === 4 ? 'text-orange-500' : 'text-emerald-500'}">${jus} / 5</div>
+                                    </div>
+                                </div>
+                                <p class="mt-4 text-slate-600 text-[9px] uppercase font-bold tracking-widest">Calculado sobre registros docentes.</p>
                             </div>
 
                             <div class="card-premium bg-slate-50 border-none shadow-none p-6">

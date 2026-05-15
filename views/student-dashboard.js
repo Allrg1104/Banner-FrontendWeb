@@ -159,10 +159,20 @@ Views['student-dashboard'] = {
             }
         });
 
-        const attendanceColors = attendance.map(a => {
-            if (a >= 80) return { fill: 'rgba(16, 185, 129, 0.1)', stroke: '#10b981' }; 
-            if (a >= 60) return { fill: 'rgba(245, 158, 11, 0.1)', stroke: '#f59e0b' };
-            return { fill: 'rgba(239, 68, 68, 0.1)', stroke: '#ef4444' };
+        const attendanceColors = matriculas.map(m => {
+            const inj = m.asistencia?.injustificadas || 0;
+            const jus = m.asistencia?.justificadas || 0;
+
+            // Red (3+ unjustified OR 5+ justified)
+            if (inj >= 3 || jus >= 5) {
+                return { fill: 'rgba(239, 68, 68, 0.1)', stroke: '#ef4444' };
+            }
+            // Orange (2 unjustified OR 4 justified)
+            if (inj === 2 || jus === 4) {
+                return { fill: 'rgba(245, 158, 11, 0.1)', stroke: '#f59e0b' };
+            }
+            // Green (Safe)
+            return { fill: 'rgba(16, 185, 129, 0.1)', stroke: '#10b981' };
         });
 
         const ctxAttendance = document.getElementById('attendanceChart').getContext('2d');

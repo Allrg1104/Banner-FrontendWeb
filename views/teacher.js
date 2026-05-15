@@ -359,17 +359,27 @@ Views.teacher = {
         `;
 
         body.innerHTML = report.students.map((s, index) => {
-            let totalFaltas = 0;
+            let inj = 0;
+            let jus = 0;
             const cells = report.dates.map(date => {
                 const record = s.history.find(h => h.fecha === date);
                 let icon = '<span class="text-slate-300">-</span>';
                 if (record) {
                     if (record.tipo === 'presente') icon = '<i data-lucide="check" class="w-4 h-4 text-[#10b981] mx-auto"></i>';
-                    else if (record.tipo === 'ausente_no_justificada') { icon = '<i data-lucide="x" class="w-4 h-4 text-rose-500 mx-auto"></i>'; totalFaltas++; }
-                    else if (record.tipo === 'ausente_justificada') { icon = '<i data-lucide="minus-circle" class="w-4 h-4 text-amber-500 mx-auto"></i>'; totalFaltas++; }
+                    else if (record.tipo === 'ausente_no_justificada') { 
+                        icon = '<i data-lucide="x" class="w-4 h-4 text-rose-500 mx-auto"></i>'; 
+                        inj++; 
+                    }
+                    else if (record.tipo === 'ausente_justificada') { 
+                        icon = '<i data-lucide="minus-circle" class="w-4 h-4 text-amber-500 mx-auto"></i>'; 
+                        jus++; 
+                    }
                 }
                 return `<td class="text-center py-4 px-2 border-l border-slate-100">${icon}</td>`;
             }).join('');
+
+            const hasFailed = inj >= 3 || jus >= 5;
+            const hasWarning = inj === 2 || jus === 4;
 
             return `
             <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} border-b border-slate-100 hover:bg-slate-100 transition-colors">
@@ -379,7 +389,12 @@ Views.teacher = {
                 </td>
                 ${cells}
                 <td class="text-center py-4 pr-4 border-l border-slate-100">
-                    <span class="font-black text-[11px] ${totalFaltas > 2 ? 'text-rose-600' : 'text-slate-700'}">${totalFaltas}</span>
+                    <div class="flex flex-col items-center gap-1">
+                        <span class="font-black text-[10px] ${inj >= 3 ? 'text-rose-600' : inj === 2 ? 'text-orange-500' : 'text-slate-700'}">INJ: ${inj}/3</span>
+                        <span class="font-black text-[10px] ${jus >= 5 ? 'text-rose-600' : jus === 4 ? 'text-orange-500' : 'text-slate-700'}">JUS: ${jus}/5</span>
+                        ${hasFailed ? '<span class="text-[8px] font-black bg-rose-600 text-white px-2 py-0.5 rounded uppercase">Reprobado</span>' : 
+                          hasWarning ? '<span class="text-[8px] font-black bg-orange-500 text-white px-2 py-0.5 rounded uppercase">Alerta</span>' : ''}
+                    </div>
                 </td>
             </tr>
             `;
