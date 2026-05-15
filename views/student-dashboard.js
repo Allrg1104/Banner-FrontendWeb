@@ -39,12 +39,24 @@ Views['student-dashboard'] = {
                     <div class="flex items-center gap-4 bg-white/80 backdrop-blur-md p-2 px-4 rounded-2xl shadow-sm border border-slate-100">
                         <div class="flex flex-col">
                             <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Periodo Lectivo</span>
-                            <div class="relative mt-1">
-                                <select id="dashboard-periodo-selector" class="appearance-none bg-slate-50 border border-slate-200 text-[11px] font-black text-indigo-600 rounded-lg py-1.5 pl-3 pr-8 cursor-pointer hover:border-indigo-300 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
-                                    <option value="">Seleccionar Periodo...</option>
-                                    ${periods?.map(p => `<option value="${p.id}" ${p.id == activePeriod.id ? 'selected' : ''}>${p.nombre} ${p.activo ? '(Actual)' : ''}</option>`).join('') || ''}
-                                </select>
-                                <i data-lucide="chevron-down" class="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-indigo-400 pointer-events-none"></i>
+                            
+                            <!-- Custom Premium Dropdown -->
+                            <div class="relative mt-1" id="custom-period-dropdown">
+                                <button class="dropdown-trigger flex items-center justify-between w-44 bg-slate-50 border border-slate-200 text-[11px] font-black text-indigo-600 rounded-lg py-1.5 px-3 hover:border-indigo-300 transition-all focus:outline-none">
+                                    <span class="truncate">${activePeriod.nombre} ${activePeriod.activo ? '(Actual)' : ''}</span>
+                                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-indigo-400 transition-transform"></i>
+                                </button>
+                                
+                                <div class="dropdown-menu hidden absolute right-0 mt-2 w-52 bg-white border border-slate-100 rounded-xl shadow-2xl z-50 overflow-hidden animate-slide-up">
+                                    <div class="p-2 text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50">Seleccionar Periodo</div>
+                                    ${periods?.map(p => `
+                                        <div class="dropdown-item px-4 py-3 text-[11px] font-bold ${p.id == activePeriod.id ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600'} hover:bg-slate-50 hover:text-indigo-600 cursor-pointer transition-all flex items-center justify-between group" data-value="${p.id}">
+                                            <span>${p.nombre}</span>
+                                            ${p.activo ? '<span class="text-[8px] bg-emerald-100 text-emerald-600 font-black px-2 py-0.5 rounded-full">ACTUAL</span>' : ''}
+                                            ${p.id == activePeriod.id ? '<i data-lucide="check" class="w-3 h-3 text-indigo-600"></i>' : ''}
+                                        </div>
+                                    `).join('') || ''}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -108,12 +120,32 @@ Views['student-dashboard'] = {
         lucide.createIcons();
         const user = Auth.getUser();
         
-        // Listener for period changes
-        const selector = document.getElementById('dashboard-periodo-selector');
-        if (selector) {
-            selector.addEventListener('change', async (e) => {
-                this.state.periodId = e.target.value;
-                await Router.refresh(); 
+        // Custom Dropdown Logic
+        const dropdown = document.getElementById('custom-period-dropdown');
+        if (dropdown) {
+            const trigger = dropdown.querySelector('.dropdown-trigger');
+            const menu = dropdown.querySelector('.dropdown-menu');
+            const items = dropdown.querySelectorAll('.dropdown-item');
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menu.classList.toggle('hidden');
+                trigger.querySelector('i').classList.toggle('rotate-180');
+            });
+
+            items.forEach(item => {
+                item.addEventListener('click', async () => {
+                    const value = item.getAttribute('data-value');
+                    this.state.periodId = value;
+                    menu.classList.add('hidden');
+                    await Router.refresh();
+                });
+            });
+
+            // Close when clicking outside
+            document.addEventListener('click', () => {
+                menu.classList.add('hidden');
+                trigger.querySelector('i').classList.remove('rotate-180');
             });
         }
 
