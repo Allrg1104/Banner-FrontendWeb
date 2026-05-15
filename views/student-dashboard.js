@@ -36,12 +36,17 @@ Views['student-dashboard'] = {
                         <h2 class="text-3xl font-black text-slate-900 tracking-tight">Panel Académico Dinámico</h2>
                         <p class="text-slate-500 font-medium">Visualiza tu rendimiento y evolución histórica</p>
                     </div>
-                    <div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-2">Periodo Lectivo:</span>
-                        <select id="dashboard-periodo-selector" class="bg-slate-50 border-none text-xs font-bold text-indigo-600 focus:ring-0 cursor-pointer rounded-xl py-2 px-4">
-                            <option value="">Seleccionar Periodo...</option>
-                            ${periods?.map(p => `<option value="${p.id}" ${p.id == activePeriod.id ? 'selected' : ''}>${p.nombre} ${p.activo ? '(Actual)' : ''}</option>`).join('') || ''}
-                        </select>
+                    <div class="flex items-center gap-4 bg-white/80 backdrop-blur-md p-2 px-4 rounded-2xl shadow-sm border border-slate-100">
+                        <div class="flex flex-col">
+                            <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Periodo Lectivo</span>
+                            <div class="relative mt-1">
+                                <select id="dashboard-periodo-selector" class="appearance-none bg-slate-50 border border-slate-200 text-[11px] font-black text-indigo-600 rounded-lg py-1.5 pl-3 pr-8 cursor-pointer hover:border-indigo-300 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/10">
+                                    <option value="">Seleccionar Periodo...</option>
+                                    ${periods?.map(p => `<option value="${p.id}" ${p.id == activePeriod.id ? 'selected' : ''}>${p.nombre} ${p.activo ? '(Actual)' : ''}</option>`).join('') || ''}
+                                </select>
+                                <i data-lucide="chevron-down" class="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-indigo-400 pointer-events-none"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
