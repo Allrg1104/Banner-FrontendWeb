@@ -159,6 +159,12 @@ Views['student-dashboard'] = {
             }
         });
 
+        const attendanceColors = attendance.map(a => {
+            if (a >= 80) return '#10b981'; // Green
+            if (a >= 60) return '#f59e0b'; // Orange
+            return '#ef4444'; // Red
+        });
+
         const ctxAttendance = document.getElementById('attendanceChart').getContext('2d');
         this.charts.attendance = new Chart(ctxAttendance, {
             type: 'bar',
@@ -167,7 +173,7 @@ Views['student-dashboard'] = {
                 datasets: [{
                     label: 'Asistencia %',
                     data: attendance,
-                    backgroundColor: '#fab720',
+                    backgroundColor: attendanceColors,
                     borderRadius: 8
                 }]
             },
