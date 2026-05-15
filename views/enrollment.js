@@ -156,16 +156,20 @@ Views['enrollment'] = {
     },
 
     generateCourseBlocks(course, index) {
-        if (!course.horario) return '';
+        // Validación ultra-segura para evitar el error de 'split'
+        if (!course || !course.horario || typeof course.horario !== 'string') return '';
         
-        // Example format: "Lun-Mié 08:00-10:00" or "Vie 14:00-18:00"
-        const parts = course.horario.split(' ');
+        const parts = course.horario.trim().split(' ');
         if (parts.length < 2) return '';
 
         const daysPart = parts[0];
         const timePart = parts[1];
 
+        if (!timePart || !timePart.includes('-')) return '';
+
         const [startStr, endStr] = timePart.split('-');
+        if (!startStr || !endStr || !startStr.includes(':') || !endStr.includes(':')) return '';
+
         const startHour = parseInt(startStr.split(':')[0]);
         const startMin = parseInt(startStr.split(':')[1]);
         const endHour = parseInt(endStr.split(':')[0]);
