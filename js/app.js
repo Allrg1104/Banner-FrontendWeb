@@ -61,13 +61,17 @@ const Layout = {
                         ${user.rol === 'registro' ? `
                             ${this.navItem('/registro', 'users', 'Gestión Usuarios')}
                             ${this.navItem('/registro-solicitudes', 'clipboard-list', 'Solicitudes')}
-                            ${this.navItem('/registro-cursos', 'book-open', 'Cursos')}
-                            ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? `
-                                <div class="pl-4 space-y-1 my-1 border-l border-slate-700/50 ml-6 animate-slide-down">
-                                    ${this.navSubItem('/registro-cursos', 'settings', 'Mantenimiento de Cursos')}
-                                    ${this.navSubItem('/registro-inscripcion', 'user-plus', 'Inscripción Estudiantes')}
+                            <button onclick="document.getElementById('submenu-cursos').classList.toggle('hidden')" class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 group ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? 'bg-[#fab720] text-[#032840] shadow-lg shadow-[#fab720]/20' : 'text-slate-200/60 hover:text-white hover:bg-white/5'}">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="book-open" class="w-5 h-5 ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? 'text-[#032840]' : 'text-slate-400 group-hover:text-[#fab720]'}"></i>
+                                    <span class="font-bold text-sm tracking-tight">Cursos</span>
                                 </div>
-                            ` : ''}
+                                <i data-lucide="chevron-down" class="w-4 h-4 ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? 'text-[#032840]/40' : 'text-slate-500 group-hover:text-slate-400'}"></i>
+                            </button>
+                            <div id="submenu-cursos" class="pl-4 space-y-1 my-1 border-l border-slate-700/50 ml-6 animate-slide-down ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? '' : 'hidden'}">
+                                ${this.navSubItem('/registro-cursos', 'settings', 'Mantenimiento de Cursos')}
+                                ${this.navSubItem('/registro-inscripcion', 'user-plus', 'Inscripción Estudiantes')}
+                            </div>
                             ${this.navItem('/salones', 'map', 'Sedes y Salones')}
                         ` : ''}
                         ${user.rol === 'financiero' ? this.navItem('/financial', 'wallet', 'Cartera') : ''}
