@@ -1165,13 +1165,147 @@ Views['teacher-services'] = {
     openImpartido() { this.openSvcModal('Plan de Curso Impartido', 'Seguimiento de temas vistos por NRC.', `<div class="p-10 text-center italic text-slate-400">Seguimiento de temas habilitado para tus cursos actuales.</div>`); },
     openConflicto() { this.openSvcModal('Matriz de Conflicto', 'Cruce de horarios detectados en la BD.', `<div class="p-10 text-center text-emerald-600 font-bold">¡Sin conflictos detectados en tu horario actual! 🎉</div>`); },
     openHorario() { this.openSvcModal('Horario y Syllabus Detallado', 'Cronograma semanal recuperado de la base de datos.', `<div class="p-10 text-center italic text-slate-400">Generando vista de horario institucional...</div>`); },
-    openSemana() { this.openSvcModal('Semana a un Vistazo', 'Agenda dinámica del docente.', `<div class="p-10 text-center italic text-slate-400">Consultando agenda semanal en la base de datos...</div>`); },
+    async openSemana() {
+        await this.loadData();
+        const courses = this.state.courses || [];
+        
+        const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        const hours = Array.from({ length: 16 }, (_, i) => i + 6); // 6:00 to 21:00
+        
+        let gridHtml = '';
+        hours.forEach(hour => {
+            gridHtml += `
+                <div class="grid grid-cols-[80px_repeat(7,1fr)]">
+                    <div class="h-[60px] border-r border-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 bg-slate-50/50">
+                        ${hour}:00
+                    </div>
+                    ${Array.from({ length: 7 }).map(() => `
+                        <div class="h-[60px] border-b border-dashed border-slate-100 border-r border-slate-100/50"></div>
+                    `).join('')}
+                </div>
+            `;
+        });
+
+        const dayMap = { 'Lun': 0, 'Mar': 1, 'Mié': 2, 'Jue': 3, 'Vie': 4, 'Sáb': 5, 'Dom': 6 };
+        const colors = [
+            'bg-indigo-500/90 text-white border-indigo-600',
+            'bg-emerald-500/90 text-white border-emerald-600',
+            'bg-amber-500/90 text-white border-amber-600',
+            'bg-rose-500/90 text-white border-rose-600',
+            'bg-violet-500/90 text-white border-violet-600',
+            'bg-cyan-500/90 text-white border-cyan-600',
+            'bg-teal-500/90 text-white border-teal-600'
+        ];
+
+        let blocksHtml = '';
+        courses.forEach((course, index) => {
+            if (!course.horario || typeof course.horario !== 'string') return;
+            
+            const parts = course.horario.trim().split(' ');
+            if (parts.length < 2) return;
+
+            const daysPart = parts[0];
+            const timePart = parts[1];
+
+            if (!timePart || !timePart.includes('-')) return;
+
+            const [startStr, endStr] = timePart.split('-');
+            if (!startStr || !endStr || !startStr.includes(':') || !endStr.includes(':')) return;
+
+            const startHour = parseInt(startStr.split(':')[0]);
+            const startMin = parseInt(startStr.split(':')[1]);
+            const endHour = parseInt(endStr.split(':')[0]);
+            const endMin = parseInt(endStr.split(':')[1]);
+
+            const top = ((startHour - 6) * 60) + startMin;
+            const height = ((endHour - startHour) * 60) + (endMin - startMin);
+
+            let targetDays = [];
+            if (daysPart.includes('-')) {
+                const [startDay, endDay] = daysPart.split('-');
+                const startIdx = dayMap[startDay];
+                const endIdx = dayMap[endDay];
+                for (let i = startIdx; i <= endIdx; i++) {
+                    if (i !== undefined) targetDays.push(i);
+                }
+            } else {
+                daysPart.split(',').forEach(d => {
+                    const idx = dayMap[d.trim()];
+                    if (idx !== undefined) targetDays.push(idx);
+                });
+            }
+
+            const colorClass = colors[index % colors.length];
+
+            targetDays.forEach(dayIdx => {
+                const left = `calc(${dayIdx} * (100% / 7))`;
+                const width = `calc(100% / 7)`;
+                
+                blocksHtml += `
+                    <div class="course-block absolute p-3 rounded-2xl text-[9px] font-black uppercase shadow-lg border hover:scale-[102%] hover:z-20 transition-all duration-200 cursor-pointer overflow-hidden ${colorClass} pointer-events-auto"
+                         style="top: ${top}px; height: ${height}px; left: ${left}; width: calc(${width} - 4px); margin-left: 2px;">
+                        <div class="truncate text-white font-black leading-tight">${course.materia}</div>
+                        <div class="text-[8px] text-white/95 mt-1 truncate">[Sede: Central] ${course.salon || 'Por definir'}</div>
+                        <div class="text-[8px] text-white/90 truncate">NRC: ${course.nrc}</div>
+                        <div class="text-[7.5px] text-white/85 font-medium mt-0.5 truncate">${startStr} - ${endStr}</div>
+                    </div>
+                `;
+            });
+        });
+
+        const bodyHtml = `
+            <div class="space-y-6 max-w-full">
+                <div class="flex items-center gap-3 p-4 bg-indigo-50 rounded-2xl text-indigo-700">
+                    <i data-lucide="info" class="w-5 h-5 flex-shrink-0"></i>
+                    <p class="text-xs font-bold">Agenda académica calculada dinámicamente desde tus asignaturas activas de este periodo.</p>
+                </div>
+
+                <div class="overflow-x-auto rounded-3xl border border-slate-100 shadow-sm max-w-full custom-scrollbar">
+                    <div class="min-w-[800px] bg-white relative pb-6">
+                        <!-- Days Header -->
+                        <div class="grid grid-cols-[80px_repeat(7,1fr)] bg-slate-50 border-b border-slate-100">
+                            <div class="p-4 border-r border-slate-100"></div>
+                            ${days.map(day => `
+                                <div class="p-4 text-center text-[9px] font-black text-slate-500 uppercase tracking-widest border-r border-slate-100 last:border-none">${day}</div>
+                            `).join('')}
+                        </div>
+
+                        <!-- Schedule Grid -->
+                        <div class="relative">
+                            ${gridHtml}
+                            <!-- Overlay Blocks -->
+                            <div class="absolute inset-0 top-0 left-[80px] pointer-events-none">
+                                ${blocksHtml || `
+                                    <div class="absolute inset-0 flex items-center justify-center bg-slate-50/40 pointer-events-none">
+                                        <p class="text-xs font-bold text-slate-400 italic">No hay clases registradas en tu horario esta semana.</p>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <style>
+                .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+            </style>
+        `;
+
+        this.openSvcModal('Semana a un Vistazo', 'Mi Agenda Académica Semanal', bodyHtml);
+    },
 
     openSvcModal(title, desc, body) {
         const modal = document.getElementById('service-modal');
         document.getElementById('svc-title').innerText = title;
         document.getElementById('svc-desc').innerText = desc;
         document.getElementById('svc-body').innerHTML = body;
+        
+        const footer = document.getElementById('svc-footer');
+        if (footer) footer.classList.add('hidden');
+        
         modal.classList.remove('hidden');
         lucide.createIcons();
     }
