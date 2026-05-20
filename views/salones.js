@@ -162,23 +162,20 @@ Views.salones = {
                                     <div class="space-y-4">
                                         <div class="space-y-1.5">
                                             <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Asignatura / NRC</label>
-                                            <select id="asig-curso" class="input-premium w-full py-4 text-sm bg-slate-50">
+                                            <select id="asig-curso" onchange="Views.salones.handleCursoChange(this.value)" class="input-premium w-full py-4 text-sm bg-slate-50">
                                                 <option value="">Seleccione curso...</option>
-                                                ${this.cursosActivos.map(c => `
+                                                ${this.cursosActivos.filter(c => !c.salon_id).map(c => `
                                                     <option value="${c.id}">${c.nrc} - ${c.asignatura}</option>
                                                 `).join('')}
                                             </select>
                                         </div>
-                                        
-                                        <div class="space-y-1.5">
-                                            <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Franja Horaria</label>
-                                            <select id="asig-horario" class="input-premium w-full py-4 text-sm bg-slate-50">
-                                                <option value="">Seleccione horario...</option>
-                                                ${horas.flatMap(h => dias.map(d => `<option value="${d.substring(0,3)} ${h}">${d.substring(0,3)} ${h}</option>`)).join('')}
-                                            </select>
+
+                                        <div id="curso-horario-info" class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1 hidden">
+                                            <label class="text-[8px] font-black text-slate-400 uppercase block">Horario Predefinido del Curso</label>
+                                            <div id="curso-horario-val" class="text-xs font-bold text-slate-700"></div>
                                         </div>
                                         
-                                        <button onclick="Views.salones.assignSalon(document.getElementById('asig-curso').value, ${this.selectedSalon.id}, document.getElementById('asig-horario').value)" class="btn-premium w-full bg-[#032840] text-white py-4 text-xs font-black shadow-lg shadow-[#032840]/20 mt-4">
+                                        <button onclick="Views.salones.assignSalon(document.getElementById('asig-curso').value, ${this.selectedSalon.id})" class="btn-premium w-full bg-[#032840] text-white py-4 text-xs font-black shadow-lg shadow-[#032840]/20 mt-4">
                                             GUARDAR ASIGNACIÓN
                                             <i data-lucide="save" class="w-4 h-4"></i>
                                         </button>
@@ -265,18 +262,34 @@ Views.salones = {
         }
     },
 
-    async assignSalon(cursoId, salonId, horario) {
-        if (!cursoId || !horario) {
-            Toast.warning('Debe seleccionar el curso y el horario');
+    async assignSalon(cursoId, salonId) {
+        if (!cursoId) {
+            Toast.warning('Debe seleccionar el curso');
             return;
         }
         try {
-            await API.post('/registro/salones/asignar', { curso_id: cursoId, salon_id: salonId, horario });
+            await API.post('/registro/salones/asignar', { curso_id: cursoId, salon_id: salonId });
             Toast.success('Asignación guardada correctamente');
             this.cursosActivos = await API.get('/registro/cursos/activos');
             await this.loadSalonOcupacion(salonId);
         } catch (e) {
-            Toast.error(e.message || 'Error al asignar salón');
+            Toast.error(e.error || e.message || 'Error al asignar salón');
+        }
+    },
+
+    handleCursoChange(cursoId) {
+        const infoDiv = document.getElementById('curso-horario-info');
+        const valSpan = document.getElementById('curso-horario-val');
+        if (!cursoId) {
+            if (infoDiv) infoDiv.classList.add('hidden');
+            return;
+        }
+        const curso = this.cursosActivos.find(c => c.id == cursoId);
+        if (curso && infoDiv && valSpan) {
+            valSpan.innerText = curso.horario;
+            infoDiv.classList.remove('hidden');
+        } else if (infoDiv) {
+            infoDiv.classList.add('hidden');
         }
     },
 

@@ -156,42 +156,73 @@ Views['enrollment'] = {
     },
 
     generateCourseBlocks(course, index) {
-        // Validación ultra-segura para evitar el error de 'split'
         if (!course || !course.horario || typeof course.horario !== 'string') return '';
         
-        const parts = course.horario.trim().split(' ');
-        if (parts.length < 2) return '';
+        const dayMap = { 
+            'Lun': 0, 'Lunes': 0,
+            'Mar': 1, 'Martes': 1,
+            'Mié': 2, 'Mie': 2, 'Miércoles': 2,
+            'Jue': 3, 'Jueves': 3,
+            'Vie': 4, 'Viernes': 4,
+            'Sáb': 5, 'Sab': 5, 'Sábado': 5,
+            'Dom': 6, 'Domingo': 6
+        };
 
-        const daysPart = parts[0];
-        const timePart = parts[1];
+        const trimmed = course.horario.trim();
+        const spaceIdx = trimmed.indexOf(' ');
+        if (spaceIdx === -1) return '';
+        
+        const daysPart = trimmed.substring(0, spaceIdx).trim();
+        const timesPart = trimmed.substring(spaceIdx + 1).trim();
+        
+        const hyphenIdx = timesPart.indexOf('-');
+        if (hyphenIdx === -1) return '';
+        
+        const startStr = timesPart.substring(0, hyphenIdx).trim();
+        const endStr = timesPart.substring(hyphenIdx + 1).trim();
+        
+        const parseTime = (timeStr) => {
+            const clean = timeStr.toUpperCase();
+            const isPM = clean.includes('PM');
+            const isAM = clean.includes('AM');
+            const digits = clean.replace(/[AP]M/, '').trim();
+            const [hStr, mStr] = digits.split(':');
+            let hour = parseInt(hStr);
+            let min = parseInt(mStr) || 0;
+            
+            if (isPM && hour < 12) hour += 12;
+            if (isAM && hour === 12) hour = 0;
+            return { hour, min };
+        };
+        
+        const start = parseTime(startStr);
+        const end = parseTime(endStr);
 
-        if (!timePart || !timePart.includes('-')) return '';
-
-        const [startStr, endStr] = timePart.split('-');
-        if (!startStr || !endStr || !startStr.includes(':') || !endStr.includes(':')) return '';
-
-        const startHour = parseInt(startStr.split(':')[0]);
-        const startMin = parseInt(startStr.split(':')[1]);
-        const endHour = parseInt(endStr.split(':')[0]);
-        const endMin = parseInt(endStr.split(':')[1]);
+        const startHour = start.hour;
+        const startMin = start.min;
+        const endHour = end.hour;
+        const endMin = end.min;
 
         // Calculate Y position (base hour 6:00)
         const top = ((startHour - 6) * 60) + startMin;
         const height = ((endHour - startHour) * 60) + (endMin - startMin);
 
-        // Day mapping
-        const dayMap = { 'Lun': 0, 'Mar': 1, 'Mié': 2, 'Jue': 3, 'Vie': 4, 'Sáb': 5, 'Dom': 6 };
         let targetDays = [];
-
         if (daysPart.includes('-')) {
             const [startDay, endDay] = daysPart.split('-');
-            const startIdx = dayMap[startDay];
-            const endIdx = dayMap[endDay];
-            for (let i = startIdx; i <= endIdx; i++) targetDays.push(i);
-        } else {
+            const startIdx = dayMap[startDay.trim()];
+            const endIdx = dayMap[endDay.trim()];
+            if (startIdx !== undefined && endIdx !== undefined) {
+                for (let i = startIdx; i <= endIdx; i++) targetDays.push(i);
+            }
+        } else if (daysPart.includes(',')) {
             daysPart.split(',').forEach(d => {
-                if (dayMap[d.trim()]) targetDays.push(dayMap[d.trim()]);
+                const idx = dayMap[d.trim()];
+                if (idx !== undefined) targetDays.push(idx);
             });
+        } else {
+            const idx = dayMap[daysPart.trim()];
+            if (idx !== undefined) targetDays.push(idx);
         }
 
         const colors = [
@@ -213,7 +244,7 @@ Views['enrollment'] = {
                     style="top: ${top}px; height: ${height}px; left: ${left}; width: calc(${width} - 4px); margin-left: 2px;">
                     <div class="truncate">${course.materia}</div>
                     <div class="text-[7px] opacity-80 mt-1">
-                        ${course.salon ? `[${course.sede || ''}] ${course.salon} (${course.bloque || ''})` : 'Ubicación por definir'}
+                        ${course.salon ? `[${course.sede || 'Sede Central'}] ${course.salon}` : 'Ubicación por definir'}
                     </div>
                     <div class="text-[7px] opacity-80">${course.nrc}</div>
                 </div>

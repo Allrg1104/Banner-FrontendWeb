@@ -236,14 +236,18 @@ Views.registro = {
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-6">
+                        <div class="grid grid-cols-3 gap-6">
                             <div class="space-y-2">
                                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">NRC (Código de Curso)</label>
                                 <input type="text" id="cc-nrc" placeholder="Ej: 14273" class="input-premium py-4 text-sm" required>
                             </div>
                             <div class="space-y-2">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Salón / Aula</label>
-                                <input type="text" id="cc-salon" placeholder="Ej: A-101 o Sistemas 1" class="input-premium py-4 text-sm" required>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha Inicio</label>
+                                <input type="date" id="cc-fecha-inicio" class="input-premium py-4 text-sm" required>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha Fin</label>
+                                <input type="date" id="cc-fecha-fin" class="input-premium py-4 text-sm" required>
                             </div>
                         </div>
 
@@ -855,10 +859,13 @@ Views.registro = {
                         <p class="text-xs text-slate-500 font-medium mb-4">${c.nombres} ${c.apellidos}</p>
                         <div class="space-y-2 pt-4 border-t border-slate-50">
                             <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400">
-                                <i data-lucide="clock" class="w-3 h-3"></i> ${c.horario}
+                                <i data-lucide="clock" class="w-3 h-3 text-slate-300"></i> ${c.horario}
                             </div>
                             <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400">
-                                <i data-lucide="map-pin" class="w-3 h-3 text-slate-300"></i> ${c.salon_id ? 'Salón Asignado' : 'Pendiente Aula'}
+                                <i data-lucide="calendar" class="w-3 h-3 text-slate-300"></i> ${c.fecha_inicio ? `${c.fecha_inicio} a ${c.fecha_fin}` : 'Vigencia por definir'}
+                            </div>
+                            <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                                <i data-lucide="map-pin" class="w-3 h-3 text-slate-300"></i> ${c.salon_id ? `Aula: ${c.salon}` : 'Pendiente Aula'}
                             </div>
                         </div>
                     </div>
@@ -902,7 +909,8 @@ Views.registro = {
         const materia_id = document.getElementById('cc-materia').value;
         const docente_id = document.getElementById('cc-docente').value;
         const nrc = document.getElementById('cc-nrc').value;
-        const salon = document.getElementById('cc-salon').value;
+        const fecha_inicio = document.getElementById('cc-fecha-inicio').value;
+        const fecha_fin = document.getElementById('cc-fecha-fin').value;
         const start = document.getElementById('cc-start').value;
         const end = document.getElementById('cc-end').value;
 
@@ -912,6 +920,21 @@ Views.registro = {
             Toast.error('Seleccione al menos un día');
             return;
         }
+
+        // Format to 12-hour AM/PM
+        const formatTo12 = (time24) => {
+            if (!time24) return '';
+            let [hours, minutes] = time24.split(':').map(Number);
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // the hour '0' should be '12'
+            const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+            const hoursStr = hours < 10 ? '0' + hours : hours;
+            return `${hoursStr}:${minutesStr} ${ampm}`;
+        };
+
+        const start12 = formatTo12(start);
+        const end12 = formatTo12(end);
 
         // Format: "Lun-Mié 18:30-21:30" or "Lun,Mar 18:30-21:30"
         let daysStr = "";
@@ -924,10 +947,17 @@ Views.registro = {
             daysStr = selectedDays.join(',');
         }
 
-        const horario = `${daysStr} ${start}-${end}`;
+        const horario = `${daysStr} ${start12} - ${end12}`;
 
         try {
-            const res = await API.post('/registro/cursos', { materia_id, docente_id, nrc, salon, horario });
+            const res = await API.post('/registro/cursos', { 
+                materia_id, 
+                docente_id, 
+                nrc, 
+                horario, 
+                fecha_inicio, 
+                fecha_fin 
+            });
             if (res.success) {
                 Toast.success('¡Curso publicado exitosamente!');
                 this.closeCourseModal();

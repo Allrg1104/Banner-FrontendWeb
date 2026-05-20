@@ -1210,18 +1210,40 @@ Views['teacher-services'] = {
         courses.forEach((course, index) => {
             if (!course.horario || typeof course.horario !== 'string') return;
             
-            const regex = /^([A-Za-záéíóúÁÉÍÓÚ\-,]+)\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/;
-            const match = course.horario.trim().match(regex);
-            if (!match) return;
+            const trimmed = course.horario.trim();
+            const spaceIdx = trimmed.indexOf(' ');
+            if (spaceIdx === -1) return;
+            
+            const daysPart = trimmed.substring(0, spaceIdx).trim();
+            const timesPart = trimmed.substring(spaceIdx + 1).trim();
+            
+            const hyphenIdx = timesPart.indexOf('-');
+            if (hyphenIdx === -1) return;
+            
+            const startStr = timesPart.substring(0, hyphenIdx).trim();
+            const endStr = timesPart.substring(hyphenIdx + 1).trim();
+            
+            const parseTime = (timeStr) => {
+                const clean = timeStr.toUpperCase();
+                const isPM = clean.includes('PM');
+                const isAM = clean.includes('AM');
+                const digits = clean.replace(/[AP]M/, '').trim();
+                const [hStr, mStr] = digits.split(':');
+                let hour = parseInt(hStr);
+                let min = parseInt(mStr) || 0;
+                
+                if (isPM && hour < 12) hour += 12;
+                if (isAM && hour === 12) hour = 0;
+                return { hour, min };
+            };
+            
+            const start = parseTime(startStr);
+            const end = parseTime(endStr);
 
-            const daysPart = match[1];
-            const startStr = match[2];
-            const endStr = match[3];
-
-            const startHour = parseInt(startStr.split(':')[0]);
-            const startMin = parseInt(startStr.split(':')[1]);
-            const endHour = parseInt(endStr.split(':')[0]);
-            const endMin = parseInt(endStr.split(':')[1]);
+            const startHour = start.hour;
+            const startMin = start.min;
+            const endHour = end.hour;
+            const endMin = end.min;
 
             const top = ((startHour - 6) * 60) + startMin;
             const height = ((endHour - startHour) * 60) + (endMin - startMin);
