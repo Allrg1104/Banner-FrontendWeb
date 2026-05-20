@@ -138,7 +138,7 @@ Views['director-evaluations'] = {
               <div class="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 border-b border-slate-100/80">
                   <div class="min-w-0 flex-1">
                       <h3 class="text-xl font-bold text-slate-900">Listado de Docentes</h3>
-                      <p class="text-sm text-slate-500 mt-1">Orden: Alfabético ascendente (A-Z)</p>
+                      <p id="evals-subtitle" class="text-sm text-slate-500 mt-1" data-total="${teachers.length}">${teachers.length} docente(s) evaluados</p>
                   </div>
                   <div class="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
                       <label class="relative block w-full sm:w-80">
@@ -158,6 +158,23 @@ Views['director-evaluations'] = {
                          <p id="evals-empty-msg" class="hidden text-center text-slate-500 py-10">Ningún docente coincide con la búsqueda.</p>`
         }
               </div>
+              
+              ${teachers.length > 10 ? `
+              <div id="evals-footer" class="border-t border-slate-100 bg-slate-50/60 px-4 py-4 sm:px-6">
+                  <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div class="flex flex-wrap items-center gap-2">
+                          <label for="evals-page-size" class="text-[10px] font-black uppercase tracking-widest text-slate-500">Mostrar</label>
+                          <select id="evals-page-size" class="cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 shadow-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/20">
+                              <option value="10">10</option>
+                              <option value="20">20</option>
+                              <option value="50">50</option>
+                              <option value="100">100</option>
+                          </select>
+                          <span class="text-xs font-medium text-slate-500">por página</span>
+                      </div>
+                      <div id="evals-pagination" class="flex flex-wrap items-center justify-center gap-2 lg:justify-end"></div>
+                  </div>
+              </div>` : ''}
           </div>
         </div>
       `;
@@ -170,32 +187,152 @@ Views['director-evaluations'] = {
     const searchInput = document.getElementById('evals-search-input');
     const grid = document.getElementById('evals-grid');
     const emptyMsg = document.getElementById('evals-empty-msg');
+    const subtitle = document.getElementById('evals-subtitle');
+    const pageSizeSelect = document.getElementById('evals-page-size');
+    const paginationContainer = document.getElementById('evals-pagination');
+    const footer = document.getElementById('evals-footer');
+    
     const allTeachers = Views['director-evaluations']._teachers || [];
+    const totalTeachers = Number(subtitle?.getAttribute('data-total')) || allTeachers.length;
+
+    const evalsState = {
+      page: 1,
+      pageSize: 10,
+      query: ''
+    };
+
+    function getFilteredTeachers() {
+      return allTeachers.filter(t => {
+        if (!evalsState.query) return true;
+        const hay = `${t.nombres} ${t.apellidos}`.toLowerCase();
+        return hay.includes(evalsState.query);
+      });
+    }
+
+    function renderPaginationControls(totalPages, currentPage, totalFiltered) {
+      if (!paginationContainer) return;
+      
+      if (totalPages <= 1 && totalFiltered <= evalsState.pageSize) {
+        paginationContainer.innerHTML = `<span class="text-xs font-medium text-slate-500">${totalFiltered === 0 ? '' : `Mostrando ${totalFiltered} docente(s)`}</span>`;
+        return;
+      }
+
+      const prevDisabled = currentPage <= 1;
+      const nextDisabled = currentPage >= totalPages;
+      const pages = [];
+      const maxButtons = 5;
+      let start = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+      let end = Math.min(totalPages, start + maxButtons - 1);
+      if (end - start + 1 < maxButtons) start = Math.max(1, end - maxButtons + 1);
+
+      for (let p = start; p <= end; p += 1) {
+        const active = p === currentPage;
+        pages.push(
+          `<button type="button" data-evals-page="${p}" class="min-w-[2.25rem] rounded-lg px-2 py-2 text-sm font-bold transition-colors ${active
+            ? 'bg-indigo-600 text-white shadow-sm'
+            : 'border border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50/60'
+          }">${p}</button>`
+        );
+      }
+
+      paginationContainer.innerHTML = `
+        <div class="flex w-full max-w-full flex-wrap items-center justify-center gap-2 sm:justify-end">
+        <button type="button" data-evals-page-nav="prev" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-600 shadow-sm transition-colors hover:border-indigo-200 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40" ${prevDisabled ? 'disabled' : ''}>Anterior</button>
+        <div class="flex flex-wrap items-center justify-center gap-1">${pages.join('')}</div>
+        <button type="button" data-evals-page-nav="next" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-600 shadow-sm transition-colors hover:border-indigo-200 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40" ${nextDisabled ? 'disabled' : ''}>Siguiente</button>
+        <span class="w-full basis-full text-center text-xs font-medium text-slate-500 sm:basis-auto sm:w-auto sm:text-left">Página ${currentPage} de ${totalPages} · ${totalFiltered} docente(s)</span>
+        </div>`;
+    }
+
+    function renderEvals() {
+      if (!grid) return;
+
+      const filtered = getFilteredTeachers();
+      const totalFiltered = filtered.length;
+      const totalPages = Math.max(1, Math.ceil(totalFiltered / evalsState.pageSize) || 1);
+      
+      if (evalsState.page > totalPages) evalsState.page = totalPages;
+      if (evalsState.page < 1) evalsState.page = 1;
+
+      const start = (evalsState.page - 1) * evalsState.pageSize;
+      const pageSlice = filtered.slice(start, start + evalsState.pageSize);
+
+      if (subtitle) {
+        const q = evalsState.query.trim();
+        if (q) {
+          subtitle.textContent = `${totalFiltered} coincidencia(s) de ${totalTeachers} docente(s) evaluados`;
+        } else {
+          subtitle.textContent = `${totalTeachers} docente(s) evaluados`;
+        }
+      }
+
+      if (totalTeachers === 0) {
+        grid.innerHTML = '<p class="text-center text-slate-500 py-10">No se encontraron evaluaciones para los docentes de este programa.</p>';
+        if (footer) footer.classList.add('hidden');
+        lucide.createIcons();
+        return;
+      }
+
+      if (totalFiltered === 0) {
+        grid.innerHTML = '';
+        emptyMsg?.classList.remove('hidden');
+        if (footer) footer.classList.add('hidden');
+        lucide.createIcons();
+        return;
+      }
+
+      emptyMsg?.classList.add('hidden');
+      grid.innerHTML = pageSlice.map(t => buildDirectorTeacherCardHtml(t)).join('');
+      
+      if (footer && totalTeachers > 10) {
+        footer.classList.remove('hidden');
+        renderPaginationControls(totalPages, evalsState.page, totalFiltered);
+      }
+      
+      lucide.createIcons();
+    }
 
     let debounce;
     searchInput?.addEventListener('input', () => {
       clearTimeout(debounce);
       debounce = setTimeout(() => {
-        if (!grid) return;
-        const q = searchInput.value.trim().toLowerCase();
-
-        const filtered = allTeachers.filter(t => {
-          if (!q) return true;
-          const hay = `${t.nombres} ${t.apellidos}`.toLowerCase();
-          return hay.includes(q);
-        });
-
-        if (filtered.length === 0) {
-          grid.innerHTML = '';
-          emptyMsg?.classList.remove('hidden');
-        } else {
-          emptyMsg?.classList.add('hidden');
-          grid.innerHTML = filtered.map(t => buildDirectorTeacherCardHtml(t)).join('');
-        }
-        lucide.createIcons();
+        evalsState.query = searchInput.value.trim().toLowerCase();
+        evalsState.page = 1;
+        renderEvals();
       }, 200);
     });
 
+    if (pageSizeSelect) {
+      pageSizeSelect.value = String(evalsState.pageSize);
+      pageSizeSelect.addEventListener('change', () => {
+        const v = Number(pageSizeSelect.value);
+        evalsState.pageSize = [10, 20, 50, 100].includes(v) ? v : 10;
+        evalsState.page = 1;
+        renderEvals();
+      });
+    }
+
+    paginationContainer?.addEventListener('click', (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLElement)) return;
+      const nav = t.closest('[data-evals-page-nav]');
+      const pageBtn = t.closest('[data-evals-page]');
+      const filtered = getFilteredTeachers();
+      const totalPages = Math.max(1, Math.ceil(filtered.length / evalsState.pageSize));
+
+      if (nav) {
+        const dir = nav.getAttribute('data-evals-page-nav');
+        if (dir === 'prev' && evalsState.page > 1) evalsState.page -= 1;
+        if (dir === 'next' && evalsState.page < totalPages) evalsState.page += 1;
+      } else if (pageBtn) {
+        const p = Number(pageBtn.getAttribute('data-evals-page'));
+        if (Number.isFinite(p) && p >= 1 && p <= totalPages) evalsState.page = p;
+      } else return;
+
+      renderEvals();
+    });
+
+    renderEvals();
     lucide.createIcons();
   }
 };
