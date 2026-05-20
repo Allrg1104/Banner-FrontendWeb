@@ -1186,7 +1186,16 @@ Views['teacher-services'] = {
             `;
         });
 
-        const dayMap = { 'Lun': 0, 'Mar': 1, 'Mié': 2, 'Jue': 3, 'Vie': 4, 'Sáb': 5, 'Dom': 6 };
+        const dayMap = { 
+            'Lun': 0, 'Lunes': 0,
+            'Mar': 1, 'Martes': 1,
+            'Mié': 2, 'Mie': 2, 'Miércoles': 2,
+            'Jue': 3, 'Jueves': 3,
+            'Vie': 4, 'Viernes': 4,
+            'Sáb': 5, 'Sab': 5, 'Sábado': 5,
+            'Dom': 6, 'Domingo': 6
+        };
+
         const colors = [
             'bg-indigo-500/90 text-white border-indigo-600',
             'bg-emerald-500/90 text-white border-emerald-600',
@@ -1201,16 +1210,13 @@ Views['teacher-services'] = {
         courses.forEach((course, index) => {
             if (!course.horario || typeof course.horario !== 'string') return;
             
-            const parts = course.horario.trim().split(' ');
-            if (parts.length < 2) return;
+            const regex = /^([A-Za-záéíóúÁÉÍÓÚ\-,]+)\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/;
+            const match = course.horario.trim().match(regex);
+            if (!match) return;
 
-            const daysPart = parts[0];
-            const timePart = parts[1];
-
-            if (!timePart || !timePart.includes('-')) return;
-
-            const [startStr, endStr] = timePart.split('-');
-            if (!startStr || !endStr || !startStr.includes(':') || !endStr.includes(':')) return;
+            const daysPart = match[1];
+            const startStr = match[2];
+            const endStr = match[3];
 
             const startHour = parseInt(startStr.split(':')[0]);
             const startMin = parseInt(startStr.split(':')[1]);
@@ -1223,16 +1229,21 @@ Views['teacher-services'] = {
             let targetDays = [];
             if (daysPart.includes('-')) {
                 const [startDay, endDay] = daysPart.split('-');
-                const startIdx = dayMap[startDay];
-                const endIdx = dayMap[endDay];
-                for (let i = startIdx; i <= endIdx; i++) {
-                    if (i !== undefined) targetDays.push(i);
+                const startIdx = dayMap[startDay.trim()];
+                const endIdx = dayMap[endDay.trim()];
+                if (startIdx !== undefined && endIdx !== undefined) {
+                    for (let i = startIdx; i <= endIdx; i++) {
+                        targetDays.push(i);
+                    }
                 }
-            } else {
+            } else if (daysPart.includes(',')) {
                 daysPart.split(',').forEach(d => {
                     const idx = dayMap[d.trim()];
                     if (idx !== undefined) targetDays.push(idx);
                 });
+            } else {
+                const idx = dayMap[daysPart.trim()];
+                if (idx !== undefined) targetDays.push(idx);
             }
 
             const colorClass = colors[index % colors.length];
@@ -1294,11 +1305,22 @@ Views['teacher-services'] = {
             </style>
         `;
 
-        this.openSvcModal('Semana a un Vistazo', 'Mi Agenda Académica Semanal', bodyHtml);
+        this.openSvcModal('Semana a un Vistazo', 'Mi Agenda Académica Semanal', bodyHtml, 'max-w-6xl');
     },
 
-    openSvcModal(title, desc, body) {
+    openSvcModal(title, desc, body, sizeClass = 'max-w-2xl') {
         const modal = document.getElementById('service-modal');
+        const modalContainer = modal.querySelector('.bg-white');
+        
+        if (modalContainer) {
+            modalContainer.classList.forEach(className => {
+                if (className.startsWith('max-w-')) {
+                    modalContainer.classList.remove(className);
+                }
+            });
+            modalContainer.classList.add(sizeClass);
+        }
+
         document.getElementById('svc-title').innerText = title;
         document.getElementById('svc-desc').innerText = desc;
         document.getElementById('svc-body').innerHTML = body;
