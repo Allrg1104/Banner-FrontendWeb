@@ -148,16 +148,12 @@ Views['enrollment'] = {
         });
 
         // Overlay of course blocks
-        const blocksHtml = this.state.schedule.map((course, idx) => {
-            return this.generateCourseBlocks(course, idx);
-        }).join('');
+        const blocksHtml = this.generateAllCourseBlocks();
 
         return html + `<div class="absolute inset-0 top-0 left-[80px] pointer-events-none">${blocksHtml}</div>`;
     },
 
-    generateCourseBlocks(course, index) {
-        if (!course || !course.horario || typeof course.horario !== 'string') return '';
-        
+    generateAllCourseBlocks() {
         const dayMap = { 
             'Lun': 0, 'Lunes': 0,
             'Mar': 1, 'Martes': 1,
@@ -168,63 +164,6 @@ Views['enrollment'] = {
             'Dom': 6, 'Domingo': 6
         };
 
-        const trimmed = course.horario.trim();
-        const spaceIdx = trimmed.indexOf(' ');
-        if (spaceIdx === -1) return '';
-        
-        const daysPart = trimmed.substring(0, spaceIdx).trim();
-        const timesPart = trimmed.substring(spaceIdx + 1).trim();
-        
-        const hyphenIdx = timesPart.indexOf('-');
-        if (hyphenIdx === -1) return '';
-        
-        const startStr = timesPart.substring(0, hyphenIdx).trim();
-        const endStr = timesPart.substring(hyphenIdx + 1).trim();
-        
-        const parseTime = (timeStr) => {
-            const clean = timeStr.toUpperCase();
-            const isPM = clean.includes('PM');
-            const isAM = clean.includes('AM');
-            const digits = clean.replace(/[AP]M/, '').trim();
-            const [hStr, mStr] = digits.split(':');
-            let hour = parseInt(hStr);
-            let min = parseInt(mStr) || 0;
-            
-            if (isPM && hour < 12) hour += 12;
-            if (isAM && hour === 12) hour = 0;
-            return { hour, min };
-        };
-        
-        const start = parseTime(startStr);
-        const end = parseTime(endStr);
-
-        const startHour = start.hour;
-        const startMin = start.min;
-        const endHour = end.hour;
-        const endMin = end.min;
-
-        // Calculate Y position (base hour 6:00)
-        const top = ((startHour - 6) * 60) + startMin;
-        const height = ((endHour - startHour) * 60) + (endMin - startMin);
-
-        let targetDays = [];
-        if (daysPart.includes('-')) {
-            const [startDay, endDay] = daysPart.split('-');
-            const startIdx = dayMap[startDay.trim()];
-            const endIdx = dayMap[endDay.trim()];
-            if (startIdx !== undefined && endIdx !== undefined) {
-                for (let i = startIdx; i <= endIdx; i++) targetDays.push(i);
-            }
-        } else if (daysPart.includes(',')) {
-            daysPart.split(',').forEach(d => {
-                const idx = dayMap[d.trim()];
-                if (idx !== undefined) targetDays.push(idx);
-            });
-        } else {
-            const idx = dayMap[daysPart.trim()];
-            if (idx !== undefined) targetDays.push(idx);
-        }
-
         const colors = [
             'bg-indigo-500 text-white border-indigo-600',
             'bg-emerald-500 text-white border-emerald-600',
@@ -233,23 +172,164 @@ Views['enrollment'] = {
             'bg-violet-500 text-white border-violet-600',
             'bg-cyan-500 text-white border-cyan-600'
         ];
-        const colorClass = colors[index % colors.length];
 
-        return targetDays.map(dayIdx => {
-            const left = (dayIdx * (100 / 7)) + '%';
-            const width = (100 / 7) + '%';
+        const dayBlocks = Array.from({ length: 7 }, () => []);
+
+        this.state.schedule.forEach((course, index) => {
+            if (!course || !course.horario || typeof course.horario !== 'string') return;
             
-            return `
-                <div class="course-block ${colorClass} pointer-events-auto" 
-                    style="top: ${top}px; height: ${height}px; left: ${left}; width: calc(${width} - 4px); margin-left: 2px;">
-                    <div class="truncate">${course.materia}</div>
-                    <div class="text-[7px] opacity-80 mt-1">
-                        ${course.salon ? `[${course.sede || 'Sede Central'}] ${course.salon}` : 'Ubicación por definir'}
+            const trimmed = course.horario.trim();
+            const spaceIdx = trimmed.indexOf(' ');
+            if (spaceIdx === -1) return;
+            
+            const daysPart = trimmed.substring(0, spaceIdx).trim();
+            const timesPart = trimmed.substring(spaceIdx + 1).trim();
+            
+            const hyphenIdx = timesPart.indexOf('-');
+            if (hyphenIdx === -1) return;
+            
+            const startStr = timesPart.substring(0, hyphenIdx).trim();
+            const endStr = timesPart.substring(hyphenIdx + 1).trim();
+            
+            const parseTime = (timeStr) => {
+                const clean = timeStr.toUpperCase();
+                const isPM = clean.includes('PM');
+                const isAM = clean.includes('AM');
+                const digits = clean.replace(/[AP]M/, '').trim();
+                const [hStr, mStr] = digits.split(':');
+                let hour = parseInt(hStr);
+                let min = parseInt(mStr) || 0;
+                
+                if (isPM && hour < 12) hour += 12;
+                if (isAM && hour === 12) hour = 0;
+                return { hour, min, hasAP: isPM || isAM };
+            };
+            
+            const start = parseTime(startStr);
+            const end = parseTime(endStr);
+
+            let startHour = start.hour;
+            let startMin = start.min;
+            let endHour = end.hour;
+            let endMin = end.min;
+
+            // Heurística de conversión inteligente si no se especificó AM/PM en ninguna parte:
+            if (!start.hasAP && !end.hasAP) {
+                if (endHour <= 10 && startHour >= 6) {
+                    startHour += 12;
+                    endHour += 12;
+                }
+            }
+
+            const top = ((startHour - 6) * 60) + startMin;
+            const height = ((endHour - startHour) * 60) + (endMin - startMin);
+
+            let targetDays = [];
+            if (daysPart.includes('-')) {
+                const [startDay, endDay] = daysPart.split('-');
+                const startIdx = dayMap[startDay.trim()];
+                const endIdx = dayMap[endDay.trim()];
+                if (startIdx !== undefined && endIdx !== undefined) {
+                    for (let i = startIdx; i <= endIdx; i++) targetDays.push(i);
+                }
+            } else if (daysPart.includes(',')) {
+                daysPart.split(',').forEach(d => {
+                    const idx = dayMap[d.trim()];
+                    if (idx !== undefined) targetDays.push(idx);
+                });
+            } else {
+                const idx = dayMap[daysPart.trim()];
+                if (idx !== undefined) targetDays.push(idx);
+            }
+
+            const colorClass = colors[index % colors.length];
+
+            const startMinAbs = startHour * 60 + startMin;
+            const endMinAbs = endHour * 60 + endMin;
+
+            targetDays.forEach(dayIdx => {
+                dayBlocks[dayIdx].push({
+                    course,
+                    startStr,
+                    endStr,
+                    startHour,
+                    startMin,
+                    endHour,
+                    endMin,
+                    startMinAbs,
+                    endMinAbs,
+                    top,
+                    height,
+                    colorClass,
+                    dayIdx
+                });
+            });
+        });
+
+        let blocksHtml = '';
+        for (let day = 0; day < 7; day++) {
+            const blocks = dayBlocks[day];
+            blocks.sort((a, b) => a.startMinAbs - b.startMinAbs);
+            
+            const groups = [];
+            blocks.forEach(b => {
+                let placed = false;
+                for (const group of groups) {
+                    const overlaps = group.some(gb => !(b.endMinAbs <= gb.startMinAbs || b.startMinAbs >= gb.endMinAbs));
+                    if (overlaps) {
+                        group.push(b);
+                        placed = true;
+                        break;
+                    }
+                }
+                if (!placed) {
+                    groups.push([b]);
+                }
+            });
+            
+            groups.forEach(group => {
+                const columns = [];
+                group.forEach(b => {
+                    let colIdx = 0;
+                    while (true) {
+                        if (!columns[colIdx]) {
+                            columns[colIdx] = [];
+                        }
+                        const overlaps = columns[colIdx].some(cb => !(b.endMinAbs <= cb.startMinAbs || b.startMinAbs >= cb.endMinAbs));
+                        if (!overlaps) {
+                            columns[colIdx].push(b);
+                            b.colIdx = colIdx;
+                            break;
+                        }
+                        colIdx++;
+                    }
+                });
+                
+                const totalCols = columns.length;
+                group.forEach(b => {
+                    b.totalCols = totalCols;
+                });
+            });
+            
+            blocks.forEach(b => {
+                const colWidth = (100 / 7) / b.totalCols;
+                const left = (day * (100 / 7)) + (b.colIdx * colWidth);
+                const width = colWidth + '%';
+                
+                blocksHtml += `
+                    <div class="course-block ${b.colorClass} pointer-events-auto" 
+                        style="top: ${b.top}px; height: ${b.height}px; left: ${left}%; width: calc(${width} - 4px); margin-left: 2px;">
+                        <div class="truncate">${b.course.materia}</div>
+                        <div class="text-[7px] opacity-80 mt-1 truncate">
+                            ${b.course.salon ? `[${b.course.sede || 'Sede Central'}] ${b.course.salon}` : 'Ubicación por definir'}
+                        </div>
+                        <div class="text-[7px] opacity-80">NRC: ${b.course.nrc}</div>
+                        <div class="text-[6.5px] opacity-75 font-semibold mt-0.5 truncate">${b.startStr} - ${b.endStr}</div>
                     </div>
-                    <div class="text-[7px] opacity-80">${course.nrc}</div>
-                </div>
-            `;
-        }).join('');
+                `;
+            });
+        }
+        return blocksHtml;
     },
 
     async afterRender() {

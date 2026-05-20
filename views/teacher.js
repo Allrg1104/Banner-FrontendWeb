@@ -152,23 +152,57 @@ Views.teacher = {
     },
 
     renderCourses() {
-        return this.state.courses.map(c => `
-            <div class="card-premium p-8 bg-white group flex flex-col justify-between">
-                <div>
-                    <h3 class="text-xl font-black text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors">${c.materia}</h3>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-6">NRC: ${c.nrc}</p>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <button onclick="Views.teacher.openStudentList(${c.id}, '${c.materia}', '${c.nrc}')" class="btn-premium bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 w-full py-3 text-xs flex justify-center items-center gap-2">
-                        <i data-lucide="users" class="w-4 h-4"></i> Ver Estudiantes
-                    </button>
-                    <div class="flex gap-2">
-                        <button onclick="Views.teacher.openCourse(${c.id}, '${c.materia}')" class="btn-premium btn-primary flex-1 py-3 text-xs">Notas</button>
-                        <button onclick="Views.teacher.openAttendance(${c.id}, '${c.materia}', '${c.nrc}')" class="btn-premium btn-ghost flex-1 py-3 text-xs border border-slate-200">Asistencia</button>
+        if (!this.state.courses || this.state.courses.length === 0) {
+            return `<div class="col-span-full text-center py-12 text-slate-400 italic bg-white rounded-3xl border border-dashed border-slate-200">No tienes cursos asignados en este periodo.</div>`;
+        }
+        return this.state.courses.map(c => {
+            const trimmed = (c.horario || '').trim();
+            const spaceIdx = trimmed.indexOf(' ');
+            let days = 'Por definir';
+            let hours = 'Por definir';
+            if (spaceIdx !== -1) {
+                days = trimmed.substring(0, spaceIdx).trim();
+                hours = trimmed.substring(spaceIdx + 1).trim();
+            } else if (trimmed) {
+                days = trimmed;
+            }
+            return `
+                <div class="card-premium p-8 bg-white group flex flex-col justify-between border border-slate-100 hover:shadow-xl transition-all duration-300">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors line-clamp-2">${c.materia}</h3>
+                        <p class="text-[10px] text-indigo-600 font-black uppercase tracking-widest mb-4">NRC: ${c.nrc}</p>
+                        
+                        <div class="grid grid-cols-2 gap-4 mt-2 mb-6 text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Días</span>
+                                <span class="font-black text-slate-800">${days}</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Horario</span>
+                                <span class="font-black text-slate-800">${hours}</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Estudiantes</span>
+                                <span class="font-black text-slate-800">${c.num_estudiantes || 0} / ${c.cupo || 30}</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Salón</span>
+                                <span class="font-black text-slate-800 truncate">${c.salon || 'Por definir'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="Views.teacher.openStudentList(${c.id}, '${c.materia}', '${c.nrc}')" class="btn-premium bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 w-full py-3 text-xs flex justify-center items-center gap-2 font-bold rounded-2xl">
+                            <i data-lucide="users" class="w-4 h-4"></i> Ver Estudiantes
+                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="Views.teacher.openCourse(${c.id}, '${c.materia}')" class="btn-premium btn-primary flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-2xl">Notas</button>
+                            <button onclick="Views.teacher.openAttendance(${c.id}, '${c.materia}', '${c.nrc}')" class="btn-premium btn-ghost flex-1 py-3 text-xs font-black uppercase tracking-wider border border-slate-200 hover:bg-slate-50 rounded-2xl">Asistencia</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     },
 
     async openCourse(id, name) {
@@ -1206,7 +1240,8 @@ Views['teacher-services'] = {
             'bg-teal-500/90 text-white border-teal-600'
         ];
 
-        let blocksHtml = '';
+        const dayBlocks = Array.from({ length: 7 }, () => []);
+
         courses.forEach((course, index) => {
             if (!course.horario || typeof course.horario !== 'string') return;
             
@@ -1234,16 +1269,24 @@ Views['teacher-services'] = {
                 
                 if (isPM && hour < 12) hour += 12;
                 if (isAM && hour === 12) hour = 0;
-                return { hour, min };
+                return { hour, min, hasAP: isPM || isAM };
             };
             
             const start = parseTime(startStr);
             const end = parseTime(endStr);
 
-            const startHour = start.hour;
-            const startMin = start.min;
-            const endHour = end.hour;
-            const endMin = end.min;
+            let startHour = start.hour;
+            let startMin = start.min;
+            let endHour = end.hour;
+            let endMin = end.min;
+
+            // Heurística de conversión inteligente si no se especificó AM/PM en ninguna parte:
+            if (!start.hasAP && !end.hasAP) {
+                if (endHour <= 10 && startHour >= 6) {
+                    startHour += 12;
+                    endHour += 12;
+                }
+            }
 
             const top = ((startHour - 6) * 60) + startMin;
             const height = ((endHour - startHour) * 60) + (endMin - startMin);
@@ -1270,21 +1313,88 @@ Views['teacher-services'] = {
 
             const colorClass = colors[index % colors.length];
 
+            const startMinAbs = startHour * 60 + startMin;
+            const endMinAbs = endHour * 60 + endMin;
+
             targetDays.forEach(dayIdx => {
-                const left = `calc(${dayIdx} * (100% / 7))`;
-                const width = `calc(100% / 7)`;
+                dayBlocks[dayIdx].push({
+                    course,
+                    startStr,
+                    endStr,
+                    startHour,
+                    startMin,
+                    endHour,
+                    endMin,
+                    startMinAbs,
+                    endMinAbs,
+                    top,
+                    height,
+                    colorClass,
+                    dayIdx
+                });
+            });
+        });
+
+        let blocksHtml = '';
+        for (let day = 0; day < 7; day++) {
+            const blocks = dayBlocks[day];
+            blocks.sort((a, b) => a.startMinAbs - b.startMinAbs);
+            
+            const groups = [];
+            blocks.forEach(b => {
+                let placed = false;
+                for (const group of groups) {
+                    const overlaps = group.some(gb => !(b.endMinAbs <= gb.startMinAbs || b.startMinAbs >= gb.endMinAbs));
+                    if (overlaps) {
+                        group.push(b);
+                        placed = true;
+                        break;
+                    }
+                }
+                if (!placed) {
+                    groups.push([b]);
+                }
+            });
+            
+            groups.forEach(group => {
+                const columns = [];
+                group.forEach(b => {
+                    let colIdx = 0;
+                    while (true) {
+                        if (!columns[colIdx]) {
+                            columns[colIdx] = [];
+                        }
+                        const overlaps = columns[colIdx].some(cb => !(b.endMinAbs <= cb.startMinAbs || b.startMinAbs >= cb.endMinAbs));
+                        if (!overlaps) {
+                            columns[colIdx].push(b);
+                            b.colIdx = colIdx;
+                            break;
+                        }
+                        colIdx++;
+                    }
+                });
+                
+                const totalCols = columns.length;
+                group.forEach(b => {
+                    b.totalCols = totalCols;
+                });
+            });
+            
+            blocks.forEach(b => {
+                const colWidth = (100 / 7) / b.totalCols;
+                const left = (day * (100 / 7)) + (b.colIdx * colWidth);
                 
                 blocksHtml += `
-                    <div class="course-block absolute p-3 rounded-2xl text-[9px] font-black uppercase shadow-lg border hover:scale-[102%] hover:z-20 transition-all duration-200 cursor-pointer overflow-hidden ${colorClass} pointer-events-auto"
-                         style="top: ${top}px; height: ${height}px; left: ${left}; width: calc(${width} - 4px); margin-left: 2px;">
-                        <div class="truncate text-white font-black leading-tight">${course.materia}</div>
-                        <div class="text-[8px] text-white/95 mt-1 truncate">[Sede: Central] ${course.salon || 'Por definir'}</div>
-                        <div class="text-[8px] text-white/90 truncate">NRC: ${course.nrc}</div>
-                        <div class="text-[7.5px] text-white/85 font-medium mt-0.5 truncate">${startStr} - ${endStr}</div>
+                    <div class="course-block absolute p-3 rounded-2xl text-[9px] font-black uppercase shadow-lg border hover:scale-[102%] hover:z-20 transition-all duration-200 cursor-pointer overflow-hidden ${b.colorClass} pointer-events-auto"
+                         style="top: ${b.top}px; height: ${b.height}px; left: ${left}%; width: calc(${colWidth}% - 4px); margin-left: 2px;">
+                        <div class="truncate text-white font-black leading-tight">${b.course.materia}</div>
+                        <div class="text-[8px] text-white/95 mt-1 truncate">[Sede: Central] ${b.course.salon || 'Por definir'}</div>
+                        <div class="text-[8px] text-white/90 truncate">NRC: ${b.course.nrc}</div>
+                        <div class="text-[7.5px] text-white/85 font-medium mt-0.5 truncate">${b.startStr} - ${b.endStr}</div>
                     </div>
                 `;
             });
-        });
+        }
 
         const bodyHtml = `
             <div class="space-y-6 max-w-full">
