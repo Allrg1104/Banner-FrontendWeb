@@ -62,9 +62,12 @@ const Layout = {
                             ${this.navItem('/registro', 'users', 'Gestión Usuarios')}
                             ${this.navItem('/registro-solicitudes', 'clipboard-list', 'Solicitudes')}
                             ${this.navItem('/registro-cursos', 'book-open', 'Cursos')}
-                            <div class="space-y-1">
-                                ${this.navSubItem('/registro-inscripcion', 'user-plus', 'Inscripción Estudiantes')}
-                            </div>
+                            ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? `
+                                <div class="pl-4 space-y-1 my-1 border-l border-slate-700/50 ml-6 animate-slide-down">
+                                    ${this.navSubItem('/registro-cursos', 'settings', 'Mantenimiento de Cursos')}
+                                    ${this.navSubItem('/registro-inscripcion', 'user-plus', 'Inscripción Estudiantes')}
+                                </div>
+                            ` : ''}
                             ${this.navItem('/salones', 'map', 'Sedes y Salones')}
                         ` : ''}
                         ${user.rol === 'financiero' ? this.navItem('/financial', 'wallet', 'Cartera') : ''}
@@ -128,7 +131,9 @@ const Layout = {
     },
 
     navItem(path, icon, label) {
-        const isActive = window.location.hash === '#' + path || (path === '/' && window.location.hash === '');
+        const isActive = window.location.hash === '#' + path || 
+            (path === '/' && window.location.hash === '') ||
+            (path === '/registro-cursos' && window.location.hash === '#/registro-inscripcion');
         return `
             <a href="#${path}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ${isActive ? 'bg-[#fab720] text-[#032840] shadow-lg shadow-[#fab720]/20' : 'text-slate-200/60 hover:text-white hover:bg-white/5'}">
                 <i data-lucide="${icon}" class="w-5 h-5 ${isActive ? 'text-[#032840]' : 'text-slate-400 group-hover:text-[#fab720]'}"></i>
