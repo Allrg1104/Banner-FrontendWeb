@@ -1026,7 +1026,7 @@ Views.registro = {
         const courses = this.cursosList || [];
 
         return `
-            <div class="card-premium bg-white p-10 shadow-xl border-[#032840]/10 ring-1 ring-[#032840]/5 max-w-4xl mx-auto animate-slide-up rounded-[32px]">
+            <div class="card-premium bg-white p-10 shadow-xl border-[#032840]/10 ring-1 ring-[#032840]/5 max-w-4xl mx-auto animate-slide-up rounded-[32px]" style="overflow: visible !important;">
                 <div class="mb-8 border-b border-slate-100 pb-6">
                     <h3 class="text-2xl font-black text-[#032840]">Inscripción Académica Manual</h3>
                     <p class="text-slate-500 mt-1 italic text-xs font-medium">Registra o vincula cualquier estudiante a una asignatura/curso activo de este periodo.</p>

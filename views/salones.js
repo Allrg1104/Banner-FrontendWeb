@@ -34,17 +34,38 @@ Views.salones = {
                     </div>
                     
                     <!-- Sede Selector (Dropdown) -->
-                    <div class="flex flex-col gap-2 min-w-[250px]">
+                    <div class="flex flex-col gap-2 min-w-[250px]" id="sede-custom-dropdown-container">
                         <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Seleccionar Sede</label>
-                        <div class="relative">
-                            <select onchange="Views.salones.selectSede(parseInt(this.value))" class="input-premium w-full py-4 px-6 bg-slate-50 border-slate-200 text-[#032840] font-bold appearance-none cursor-pointer hover:bg-slate-100 transition-all">
-                                <option value="">Seleccione una sede...</option>
-                                ${sedes.map(s => `
-                                    <option value="${s.id}" ${this.selectedSede?.id === s.id ? 'selected' : ''}>${s.nombre}</option>
-                                `).join('')}
-                            </select>
-                            <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <i data-lucide="map-pin" class="w-5 h-5 text-[#fab720]"></i>
+                        <div class="relative w-full" id="sede-custom-dropdown">
+                            <!-- Trigger Button -->
+                            <button onclick="Views.salones.toggleSedeDropdown()" id="sede-trigger" class="input-premium w-full py-4 px-6 text-sm bg-slate-50 text-left flex justify-between items-center font-bold text-slate-700 rounded-2xl border border-slate-100 hover:bg-slate-100/50 transition-all">
+                                <span id="sede-trigger-text" class="text-[#032840] font-bold">
+                                    ${this.selectedSede ? this.selectedSede.nombre : '<span class="text-slate-400 italic">Seleccione una sede...</span>'}
+                                </span>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
+                            </button>
+                            
+                            <!-- Dropdown Panel -->
+                            <div id="sede-panel" class="absolute right-0 mt-2 bg-white rounded-3xl border border-slate-100 shadow-2xl z-[120] p-4 hidden min-w-[250px] space-y-3 animate-slide-up">
+                                <!-- Search Input -->
+                                <div class="relative text-slate-800">
+                                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+                                    <input type="text" id="sede-search" oninput="Views.salones.filterSedeDropdown(this.value)" placeholder="Buscar sede..." class="input-premium w-full pl-11 py-3 text-xs bg-slate-50 border border-slate-100">
+                                </div>
+                                
+                                <!-- Options Container -->
+                                <div class="max-h-60 overflow-y-auto space-y-1.5 custom-scrollbar" id="sede-options">
+                                    ${sedes.map(s => `
+                                        <div onclick="Views.salones.selectSedeDropdown('${s.id}', '${s.nombre.replace(/'/g, "\\'")}')" 
+                                             class="flex items-center justify-between p-3 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all cursor-pointer group">
+                                            <div class="text-xs font-black text-slate-800 group-hover:text-indigo-900 line-clamp-1">${s.nombre}</div>
+                                            <i data-lucide="map-pin" class="w-3 h-3 text-slate-300 group-hover:text-indigo-500"></i>
+                                        </div>
+                                    `).join('')}
+                                    ${sedes.length === 0 ? `
+                                        <div class="text-center py-6 text-slate-400 text-xs italic">No hay sedes creadas</div>
+                                    ` : ''}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -149,7 +170,7 @@ Views.salones = {
                         ${this.selectedSalon ? `
                             <div class="grid grid-cols-1 md:grid-cols-5 gap-6 animate-slide-up">
                                 <!-- Form -->
-                                <div class="md:col-span-2 card-premium p-8 bg-white shadow-xl border-[#032840]/10 ring-1 ring-[#032840]/5">
+                                <div class="md:col-span-2 card-premium p-8 bg-white shadow-xl border-[#032840]/10 ring-1 ring-[#032840]/5" style="overflow: visible !important;">
                                     <div class="mb-6">
                                         <img src="https://images.unsplash.com/photo-1577412647305-991150c7d163?auto=format&fit=crop&q=80&w=400&h=200" alt="Salón" class="w-full h-32 object-cover rounded-xl mb-4 shadow-sm">
                                         <div class="flex items-center justify-between">
@@ -306,6 +327,40 @@ Views.salones = {
         }
     },
 
+    toggleSedeDropdown() {
+        const panel = document.getElementById('sede-panel');
+        if (panel) {
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                const search = document.getElementById('sede-search');
+                if (search) {
+                    search.value = '';
+                    search.focus();
+                    this.filterSedeDropdown('');
+                }
+            }
+        }
+    },
+
+    filterSedeDropdown(query) {
+        const q = query.toLowerCase();
+        const options = document.getElementById('sede-options').children;
+        for (const opt of options) {
+            const text = opt.innerText.toLowerCase();
+            opt.style.display = text.includes(q) ? 'flex' : 'none';
+        }
+    },
+
+    async selectSedeDropdown(id, name) {
+        const triggerText = document.getElementById('sede-trigger-text');
+        const panel = document.getElementById('sede-panel');
+        if (triggerText && panel) {
+            triggerText.innerHTML = `<span class="text-[#032840] font-bold">${name}</span>`;
+            panel.classList.add('hidden');
+            await this.selectSede(parseInt(id));
+        }
+    },
+
     toggleCustomDropdown() {
         const panel = document.getElementById('asig-curso-panel');
         if (panel) {
@@ -398,11 +453,16 @@ Views.salones = {
         if (window.lucide) {
             window.lucide.createIcons();
         }
-        // Click outside handler for custom dropdown
+        // Click outside handler for custom dropdowns
         document.addEventListener('click', (e) => {
             const dropdown = document.getElementById('asig-curso-custom-dropdown');
             if (dropdown && !dropdown.contains(e.target)) {
                 const panel = document.getElementById('asig-curso-panel');
+                if (panel) panel.classList.add('hidden');
+            }
+            const SedeDropdown = document.getElementById('sede-custom-dropdown-container');
+            if (SedeDropdown && !SedeDropdown.contains(e.target)) {
+                const panel = document.getElementById('sede-panel');
                 if (panel) panel.classList.add('hidden');
             }
         });
