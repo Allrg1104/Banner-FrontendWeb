@@ -80,9 +80,9 @@ const Layout = {
                                     <i data-lucide="book-open" class="w-5 h-5 ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? 'text-[#032840]' : 'text-slate-400 group-hover:text-[#fab720]'}"></i>
                                     <span class="font-bold text-sm tracking-tight">Cursos</span>
                                 </div>
-                                <i id="cursos-chevron" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-300 ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? 'text-[#032840]/40' : 'text-slate-500 group-hover:text-slate-400'}" style="transform: rotate(0deg);"></i>
+                                <i id="cursos-chevron" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-300 ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? 'text-[#032840]/40' : 'text-slate-500 group-hover:text-slate-400'}" style="transform: ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? 'rotate(180deg)' : 'rotate(0deg)'};"></i>
                             </button>
-                            <div id="submenu-cursos" class="pl-4 space-y-1 border-l border-slate-700/50 ml-6 overflow-hidden transition-all duration-300" style="max-height: 0px; opacity: 0; margin-top: 0;">
+                            <div id="submenu-cursos" class="pl-4 space-y-1 border-l border-slate-700/50 ml-6 overflow-hidden transition-all duration-300" style="${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? 'max-height: 500px; opacity: 1; margin-top: 4px;' : 'max-height: 0px; opacity: 0; margin-top: 0;'}">
                                 ${this.navSubItem('/registro-cursos', 'settings', 'Mantenimiento de Cursos')}
                                 ${this.navSubItem('/registro-inscripcion', 'user-plus', 'Inscripción Estudiantes')}
                             </div>

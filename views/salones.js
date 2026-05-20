@@ -12,9 +12,8 @@ Views.salones = {
         if (this.sedes.length === 0) {
             await this.loadSedes();
         }
-        if (this.cursosActivos.length === 0) {
-            this.cursosActivos = await API.get('/registro/cursos/activos');
-        }
+        // Siempre refrescar la lista para que aparezcan los cursos recién creados
+        this.cursosActivos = await API.get('/registro/cursos/activos');
 
         const sedes = this.sedes;
         const bloques = this.bloques;
@@ -207,7 +206,7 @@ Views.salones = {
                                                                     <div class="text-xs font-black text-slate-800 group-hover:text-indigo-900 line-clamp-1">${c.asignatura}</div>
                                                                     <div class="text-[9px] font-bold text-slate-400 mt-0.5">${c.horario}</div>
                                                                 </div>
-                                                                <span class="text-[9px] font-black bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-700 px-2 py-1 rounded-xl uppercase shrink-0">NRC ${c.nrc}</span>
+                                                                <span class="text-[9px] font-black bg-[#fab720]/20 text-[#032840] border border-[#fab720]/30 group-hover:bg-[#fab720] group-hover:text-white px-2 py-1 rounded-xl uppercase shrink-0 transition-all">NRC ${c.nrc}</span>
                                                             </div>
                                                         `).join('')}
                                                         ${this.cursosActivos.filter(c => !c.salon_id).length === 0 ? `
