@@ -19,6 +19,9 @@ Views.registro = {
         if (this.currentTab === 'solicitudes' && !this.solicitudes) {
             await this.loadSolicitudes();
         }
+        if (this.currentTab === 'inscripcion' && !this.cursosList) {
+            await this.loadInscripcionData();
+        }
 
         const filteredUsers = this.users.filter(u =>
             u.nombres.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -52,13 +55,18 @@ Views.registro = {
                         class="px-8 py-4 text-sm font-black uppercase tracking-widest transition-all ${this.currentTab === 'cursos' ? 'border-b-4 border-[#fab720] text-[#032840]' : 'text-slate-400 hover:text-slate-600'}">
                         Gestión Académica
                     </button>
+                    <button onclick="Views.registro.setTab('inscripcion')" 
+                        class="px-8 py-4 text-sm font-black uppercase tracking-widest transition-all ${this.currentTab === 'inscripcion' ? 'border-b-4 border-[#fab720] text-[#032840]' : 'text-slate-400 hover:text-slate-600'}">
+                        Inscripción Manual
+                    </button>
                 </div>
 
                 <!-- Tab Content -->
                 <div id="registro-content" class="min-h-[600px]">
                     ${this.currentTab === 'directorio' ? this.renderDirectorio(filteredUsers) : 
                       this.currentTab === 'solicitudes' ? this.renderSolicitudes() : 
-                      this.renderCursos()}
+                      this.currentTab === 'cursos' ? this.renderCursos() :
+                      this.renderInscripcion()}
                 </div>
             </div>
 
@@ -782,6 +790,19 @@ Views.registro = {
         if (this.currentTab === 'cursos') {
             this.loadCursos();
         }
+        // Click outside handler for manual enrollment dropdowns
+        document.addEventListener('click', (e) => {
+            const studentDropdown = document.getElementById('student-custom-dropdown-container');
+            if (studentDropdown && !studentDropdown.contains(e.target)) {
+                const panel = document.getElementById('student-panel');
+                if (panel) panel.classList.add('hidden');
+            }
+            const courseDropdown = document.getElementById('course-custom-dropdown-container');
+            if (courseDropdown && !courseDropdown.contains(e.target)) {
+                const panel = document.getElementById('course-panel');
+                if (panel) panel.classList.add('hidden');
+            }
+        });
     },
 
     async loadUsers() {
@@ -989,5 +1010,202 @@ Views.registro = {
         // Simple throttle for UI smoothness
         clearTimeout(this.searchTimer);
         this.searchTimer = setTimeout(() => this.reRender(), 300);
+    },
+
+    async loadInscripcionData() {
+        try {
+            this.cursosList = await API.get('/registro/cursos/activos');
+        } catch (e) {
+            Toast.error('Fallo cargando cursos activos');
+            this.cursosList = [];
+        }
+    },
+
+    renderInscripcion() {
+        const students = this.users.filter(u => u.rol === 'estudiante');
+        const courses = this.cursosList || [];
+
+        return `
+            <div class="card-premium bg-white p-10 shadow-xl border-[#032840]/10 ring-1 ring-[#032840]/5 max-w-4xl mx-auto animate-slide-up rounded-[32px]">
+                <div class="mb-8 border-b border-slate-100 pb-6">
+                    <h3 class="text-2xl font-black text-[#032840]">Inscripción Académica Manual</h3>
+                    <p class="text-slate-500 mt-1 italic text-xs font-medium">Registra o vincula cualquier estudiante a una asignatura/curso activo de este periodo.</p>
+                </div>
+                
+                <div class="space-y-6">
+                    <!-- Dropdown Estudiante -->
+                    <div class="space-y-1.5 relative" id="student-custom-dropdown-container">
+                        <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Seleccionar Estudiante</label>
+                        <!-- Trigger -->
+                        <button onclick="Views.registro.toggleStudentDropdown()" id="student-trigger" class="input-premium w-full py-4 px-6 text-sm bg-slate-50 text-left flex justify-between items-center font-bold text-slate-700 rounded-2xl border border-slate-100 hover:bg-slate-100/50 transition-all">
+                            <span id="student-trigger-text" class="text-slate-400 italic">Buscar y seleccionar estudiante...</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
+                        </button>
+                        
+                        <!-- Panel -->
+                        <div id="student-panel" class="absolute left-0 right-0 mt-2 bg-white rounded-3xl border border-slate-100 shadow-2xl z-[120] p-4 hidden space-y-3">
+                            <div class="relative">
+                                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+                                <input type="text" id="student-search" oninput="Views.registro.filterStudentDropdown(this.value)" placeholder="Buscar estudiante por nombre, usuario o cédula..." class="input-premium w-full pl-11 py-3 text-xs bg-slate-50 border border-slate-100">
+                            </div>
+                            
+                            <div class="max-h-60 overflow-y-auto space-y-1.5 custom-scrollbar" id="student-options">
+                                ${students.map(s => `
+                                    <div onclick="Views.registro.selectStudentDropdown('${s.id}', '${s.nombres.replace(/'/g, "\\'")}', '${s.apellidos.replace(/'/g, "\\'")}', '${s.documento || ''}')" 
+                                         class="flex items-center justify-between p-3 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all cursor-pointer group">
+                                        <div>
+                                            <div class="text-xs font-black text-slate-800 group-hover:text-indigo-900">${s.nombres} ${s.apellidos}</div>
+                                            <div class="text-[9px] font-bold text-slate-400 mt-0.5">${s.email || s.username}</div>
+                                        </div>
+                                        <span class="text-[9px] font-black bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-700 px-2 py-1 rounded-xl shrink-0">${s.documento || 'CC Pendiente'}</span>
+                                    </div>
+                                `).join('')}
+                                ${students.length === 0 ? `<div class="text-center py-6 text-slate-400 text-xs italic">No hay estudiantes registrados</div>` : ''}
+                            </div>
+                        </div>
+                        <input type="hidden" id="selected-student-id" value="">
+                    </div>
+
+                    <!-- Dropdown Curso -->
+                    <div class="space-y-1.5 relative" id="course-custom-dropdown-container">
+                        <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Seleccionar Curso / NRC</label>
+                        <!-- Trigger -->
+                        <button onclick="Views.registro.toggleCourseDropdown()" id="course-trigger" class="input-premium w-full py-4 px-6 text-sm bg-slate-50 text-left flex justify-between items-center font-bold text-slate-700 rounded-2xl border border-slate-100 hover:bg-slate-100/50 transition-all">
+                            <span id="course-trigger-text" class="text-slate-400 italic">Buscar y seleccionar curso...</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
+                        </button>
+                        
+                        <!-- Panel -->
+                        <div id="course-panel" class="absolute left-0 right-0 mt-2 bg-white rounded-3xl border border-slate-100 shadow-2xl z-[120] p-4 hidden space-y-3">
+                            <div class="relative">
+                                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+                                <input type="text" id="course-search" oninput="Views.registro.filterCourseDropdown(this.value)" placeholder="Buscar curso por asignatura o NRC..." class="input-premium w-full pl-11 py-3 text-xs bg-slate-50 border border-slate-100">
+                            </div>
+                            
+                            <div class="max-h-60 overflow-y-auto space-y-1.5 custom-scrollbar" id="course-options">
+                                ${courses.map(c => `
+                                    <div onclick="Views.registro.selectCourseDropdown('${c.id}', '${c.nrc}', '${c.asignatura.replace(/'/g, "\\'")}', '${c.nombres.replace(/'/g, "\\'")} ${c.apellidos.replace(/'/g, "\\'")}')" 
+                                         class="flex items-center justify-between p-3 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all cursor-pointer group">
+                                        <div class="pr-2">
+                                            <div class="text-xs font-black text-slate-800 group-hover:text-indigo-900 line-clamp-1">${c.asignatura}</div>
+                                            <div class="text-[9px] font-bold text-slate-400 mt-0.5">Profesor: ${c.nombres} ${c.apellidos} | Horario: ${c.horario}</div>
+                                        </div>
+                                        <span class="text-[9px] font-black bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-700 px-2 py-1 rounded-xl uppercase shrink-0">NRC ${c.nrc}</span>
+                                    </div>
+                                `).join('')}
+                                ${courses.length === 0 ? `<div class="text-center py-6 text-slate-400 text-xs italic">No hay cursos creados activos</div>` : ''}
+                            </div>
+                        </div>
+                        <input type="hidden" id="selected-course-id" value="">
+                    </div>
+
+                    <!-- Botón de Envío -->
+                    <button onclick="Views.registro.enrollStudentSubmit()" class="btn-premium w-full bg-[#032840] text-white py-4 text-xs font-black shadow-lg shadow-[#032840]/20 mt-4 rounded-2xl flex justify-center items-center gap-2">
+                        COMPLETAR MATRÍCULA
+                        <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    toggleStudentDropdown() {
+        const panel = document.getElementById('student-panel');
+        if (panel) {
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                const search = document.getElementById('student-search');
+                if (search) {
+                    search.value = '';
+                    search.focus();
+                    this.filterStudentDropdown('');
+                }
+            }
+        }
+    },
+
+    filterStudentDropdown(query) {
+        const q = query.toLowerCase();
+        const options = document.getElementById('student-options').children;
+        for (const opt of options) {
+            const text = opt.innerText.toLowerCase();
+            opt.style.display = text.includes(q) ? 'flex' : 'none';
+        }
+    },
+
+    selectStudentDropdown(id, name, lastname, doc) {
+        const hiddenInput = document.getElementById('selected-student-id');
+        const triggerText = document.getElementById('student-trigger-text');
+        const panel = document.getElementById('student-panel');
+        if (hiddenInput && triggerText && panel) {
+            hiddenInput.value = id;
+            triggerText.innerHTML = `<span class="font-black text-slate-800">${name} ${lastname} ${doc ? `(${doc})` : ''}</span>`;
+            panel.classList.add('hidden');
+        }
+    },
+
+    toggleCourseDropdown() {
+        const panel = document.getElementById('course-panel');
+        if (panel) {
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                const search = document.getElementById('course-search');
+                if (search) {
+                    search.value = '';
+                    search.focus();
+                    this.filterCourseDropdown('');
+                }
+            }
+        }
+    },
+
+    filterCourseDropdown(query) {
+        const q = query.toLowerCase();
+        const options = document.getElementById('course-options').children;
+        for (const opt of options) {
+            const text = opt.innerText.toLowerCase();
+            opt.style.display = text.includes(q) ? 'flex' : 'none';
+        }
+    },
+
+    selectCourseDropdown(id, nrc, name, teacher) {
+        const hiddenInput = document.getElementById('selected-course-id');
+        const triggerText = document.getElementById('course-trigger-text');
+        const panel = document.getElementById('course-panel');
+        if (hiddenInput && triggerText && panel) {
+            hiddenInput.value = id;
+            triggerText.innerHTML = `<span class="font-black text-slate-800">NRC ${nrc} - ${name} (${teacher})</span>`;
+            panel.classList.add('hidden');
+        }
+    },
+
+    async enrollStudentSubmit() {
+        const studentId = document.getElementById('selected-student-id').value;
+        const cursoId = document.getElementById('selected-course-id').value;
+
+        if (!studentId) {
+            Toast.warning('Debe seleccionar un estudiante');
+            return;
+        }
+        if (!cursoId) {
+            Toast.warning('Debe seleccionar un curso');
+            return;
+        }
+
+        try {
+            await API.post('/registro/cursos/inscribir-estudiante', { student_id: studentId, curso_id: cursoId });
+            Toast.success('¡Estudiante matriculado con éxito!');
+            
+            // Reset fields
+            document.getElementById('selected-student-id').value = '';
+            document.getElementById('selected-course-id').value = '';
+            document.getElementById('student-trigger-text').innerHTML = '<span class="text-slate-400 italic">Buscar y seleccionar estudiante...</span>';
+            document.getElementById('course-trigger-text').innerHTML = '<span class="text-slate-400 italic">Buscar y seleccionar curso...</span>';
+            
+            // Refresh local state lists
+            this.cursosList = await API.get('/registro/cursos/activos');
+        } catch (e) {
+            Toast.error(e.error || e.message || 'Error al matricular estudiante');
+        }
     }
 };

@@ -162,12 +162,41 @@ Views.salones = {
                                     <div class="space-y-4">
                                         <div class="space-y-1.5">
                                             <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Asignatura / NRC</label>
-                                            <select id="asig-curso" onchange="Views.salones.handleCursoChange(this.value)" class="input-premium w-full py-4 text-sm bg-slate-50">
-                                                <option value="">Seleccione curso...</option>
-                                                ${this.cursosActivos.filter(c => !c.salon_id).map(c => `
-                                                    <option value="${c.id}">${c.nrc} - ${c.asignatura}</option>
-                                                `).join('')}
-                                            </select>
+                                            <div class="relative w-full" id="asig-curso-custom-dropdown">
+                                                <!-- Trigger Button -->
+                                                <button onclick="Views.salones.toggleCustomDropdown()" id="asig-curso-trigger" class="input-premium w-full py-4 px-6 text-sm bg-slate-50 text-left flex justify-between items-center font-bold text-slate-700 rounded-2xl border border-slate-100 hover:bg-slate-100/50 transition-all">
+                                                    <span id="asig-curso-trigger-text" class="text-slate-400 italic">Seleccione curso...</span>
+                                                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
+                                                </button>
+                                                
+                                                <!-- Dropdown Panel -->
+                                                <div id="asig-curso-panel" class="absolute left-0 right-0 mt-2 bg-white rounded-3xl border border-slate-100 shadow-2xl z-[120] p-4 hidden space-y-3 animate-slide-up">
+                                                    <!-- Search Input -->
+                                                    <div class="relative">
+                                                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+                                                        <input type="text" id="asig-curso-search" oninput="Views.salones.filterCustomDropdown(this.value)" placeholder="Buscar por NRC o Asignatura..." class="input-premium w-full pl-11 py-3 text-xs bg-slate-50 border border-slate-100">
+                                                    </div>
+                                                    
+                                                    <!-- Options Container -->
+                                                    <div class="max-h-60 overflow-y-auto space-y-1.5 custom-scrollbar" id="asig-curso-options">
+                                                        ${this.cursosActivos.filter(c => !c.salon_id).map(c => `
+                                                            <div onclick="Views.salones.selectCustomDropdown('${c.id}', '${c.nrc}', '${c.asignatura.replace(/'/g, "\\'")}', '${c.horario}')" 
+                                                                 class="flex items-center justify-between p-3 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all cursor-pointer group">
+                                                                <div class="pr-2">
+                                                                    <div class="text-xs font-black text-slate-800 group-hover:text-indigo-900 line-clamp-1">${c.asignatura}</div>
+                                                                    <div class="text-[9px] font-bold text-slate-400 mt-0.5">${c.horario}</div>
+                                                                </div>
+                                                                <span class="text-[9px] font-black bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-700 px-2 py-1 rounded-xl uppercase shrink-0">NRC ${c.nrc}</span>
+                                                            </div>
+                                                        `).join('')}
+                                                        ${this.cursosActivos.filter(c => !c.salon_id).length === 0 ? `
+                                                            <div class="text-center py-6 text-slate-400 text-xs italic">No hay cursos disponibles para asignar</div>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- Hidden Input for logic integration -->
+                                            <input type="hidden" id="asig-curso" value="">
                                         </div>
 
                                         <div id="curso-horario-info" class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1 hidden">
@@ -277,6 +306,48 @@ Views.salones = {
         }
     },
 
+    toggleCustomDropdown() {
+        const panel = document.getElementById('asig-curso-panel');
+        if (panel) {
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                const search = document.getElementById('asig-curso-search');
+                if (search) {
+                    search.value = '';
+                    search.focus();
+                    this.filterCustomDropdown('');
+                }
+            }
+        }
+    },
+
+    filterCustomDropdown(query) {
+        const q = query.toLowerCase();
+        const options = document.getElementById('asig-curso-options').children;
+        for (const opt of options) {
+            if (opt.id === 'no-options') continue;
+            const text = opt.innerText.toLowerCase();
+            if (text.includes(q)) {
+                opt.style.display = 'flex';
+            } else {
+                opt.style.display = 'none';
+            }
+        }
+    },
+
+    selectCustomDropdown(id, nrc, name, horario) {
+        const hiddenInput = document.getElementById('asig-curso');
+        const triggerText = document.getElementById('asig-curso-trigger-text');
+        const panel = document.getElementById('asig-curso-panel');
+        
+        if (hiddenInput && triggerText && panel) {
+            hiddenInput.value = id;
+            triggerText.innerHTML = `<span class="font-black text-slate-800">${nrc} - ${name}</span>`;
+            panel.classList.add('hidden');
+            this.handleCursoChange(id);
+        }
+    },
+
     handleCursoChange(cursoId) {
         const infoDiv = document.getElementById('curso-horario-info');
         const valSpan = document.getElementById('curso-horario-val');
@@ -327,6 +398,14 @@ Views.salones = {
         if (window.lucide) {
             window.lucide.createIcons();
         }
+        // Click outside handler for custom dropdown
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('asig-curso-custom-dropdown');
+            if (dropdown && !dropdown.contains(e.target)) {
+                const panel = document.getElementById('asig-curso-panel');
+                if (panel) panel.classList.add('hidden');
+            }
+        });
     },
 
     async reRender() {
