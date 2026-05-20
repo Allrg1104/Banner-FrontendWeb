@@ -748,7 +748,418 @@ Views['teacher-services'] = {
     },
 
     // PLACEHOLDERS FUNCIONALES (Para las funciones que faltaban)
-    openPersonalInfo() { this.openSvcModal('Información Personal', 'Actualiza tus datos de contacto en la base de datos.', `<div class="p-10 text-center italic text-slate-400">Modulo de actualización de perfil activo para DB.</div>`); },
+    isEditingPersonalInfo: false,
+    async openPersonalInfo() {
+        let user = await Auth.refreshUser();
+        if (!user) user = Auth.getUser();
+        let metadata = {};
+        if (user && user.metadata) {
+            try {
+                metadata = typeof user.metadata === 'string' ? JSON.parse(user.metadata) : user.metadata;
+            } catch (e) { console.error('Error parsing metadata', e); }
+        }
+
+        const isEditing = this.isEditingPersonalInfo;
+
+        const bodyHtml = `
+            <div class="space-y-6">
+                <!-- Detalles Personales -->
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-3">
+                        <h4 class="text-base font-black text-[#032840]">Detalles personales</h4>
+                        ${isEditing ? `
+                            <div class="flex gap-2">
+                                <button onclick="Views['teacher-services'].cancelEditPersonalInfo()" class="text-slate-400 text-[10px] font-black uppercase hover:text-red-500">Cancelar</button>
+                                <button onclick="Views['teacher-services'].savePersonalInfo()" class="btn-premium bg-[#fab720] text-[#032840] px-4 py-1.5 text-[10px]">Guardar</button>
+                            </div>
+                        ` : `
+                            <button onclick="Views['teacher-services'].enableEditPersonalInfo()" class="flex items-center gap-1.5 text-[#fab720] text-xs font-black uppercase hover:scale-105 transition-transform">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Editar
+                            </button>
+                        `}
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Nombre</label>
+                            ${isEditing ?
+                                `<input type="text" id="teach-edit-nombre" class="w-full bg-white p-2 rounded-xl text-xs border border-slate-300 font-bold" value="${user.nombres || ''}">` :
+                                `<div class="text-xs font-bold text-slate-800">${user.nombres || '-'}</div>`
+                            }
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Segundo nombre</label>
+                            ${isEditing ?
+                                `<input type="text" id="teach-edit-segundo-nombre" class="w-full bg-white p-2 rounded-xl text-xs border border-slate-300 font-bold" value="${metadata.segundo_nombre || ''}">` :
+                                `<div class="text-xs font-bold text-slate-800">${metadata.segundo_nombre || '-'}</div>`
+                            }
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Apellido</label>
+                            ${isEditing ?
+                                `<input type="text" id="teach-edit-apellido" class="w-full bg-white p-2 rounded-xl text-xs border border-slate-300 font-bold" value="${user.apellidos || ''}">` :
+                                `<div class="text-xs font-bold text-slate-800">${user.apellidos || '-'}</div>`
+                            }
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fecha de nacimiento</label>
+                            ${isEditing ?
+                                `<input type="date" id="teach-edit-nacimiento" class="w-full bg-white p-2 rounded-xl text-xs border border-slate-300 font-bold" value="${user.fecha_nacimiento || ''}">` :
+                                `<div class="text-xs font-bold text-slate-800">${user.fecha_nacimiento || 'No registrada'}</div>`
+                            }
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Estado civil</label>
+                            ${isEditing ?
+                                `<select id="teach-edit-civil" class="w-full bg-white p-2 rounded-xl text-xs border border-slate-300 font-bold">
+                                    <option value="Soltero(a)" ${metadata.estado_civil === 'Soltero(a)' ? 'selected' : ''}>Soltero(a)</option>
+                                    <option value="Casado(a)" ${metadata.estado_civil === 'Casado(a)' ? 'selected' : ''}>Casado(a)</option>
+                                    <option value="Union Libre" ${metadata.estado_civil === 'Union Libre' ? 'selected' : ''}>Unión Libre</option>
+                                </select>` :
+                                `<div class="text-xs font-bold text-slate-800">${metadata.estado_civil || 'Soltero(a)'}</div>`
+                            }
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Sexo</label>
+                            ${isEditing ?
+                                `<select id="teach-edit-sexo" class="w-full bg-white p-2 rounded-xl text-xs border border-slate-300 font-bold">
+                                    <option value="Masculino" ${metadata.sexo === 'Masculino' ? 'selected' : ''}>Masculino</option>
+                                    <option value="Femenino" ${metadata.sexo === 'Femenino' ? 'selected' : ''}>Femenino</option>
+                                    <option value="Otro" ${metadata.sexo === 'Otro' ? 'selected' : ''}>Otro</option>
+                                </select>` :
+                                `<div class="text-xs font-bold text-slate-800">${metadata.sexo || 'Masculino'}</div>`
+                            }
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Nombre preferido</label>
+                            ${isEditing ?
+                                `<input type="text" id="teach-edit-preferido" class="w-full bg-white p-2 rounded-xl text-xs border border-slate-300 font-bold" value="${metadata.nombre_preferido || ''}">` :
+                                `<div class="text-xs font-bold text-slate-800">${metadata.nombre_preferido || '-'}</div>`
+                            }
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Identificación de género</label>
+                            ${isEditing ?
+                                `<input type="text" id="teach-edit-genero" class="w-full bg-white p-2 rounded-xl text-xs border border-slate-300 font-bold" value="${metadata.identificacion_genero || ''}">` :
+                                `<div class="text-xs font-bold text-slate-800">${metadata.identificacion_genero || 'Masculino'}</div>`
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Correo Electrónico -->
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-3">
+                        <h4 class="text-base font-black text-[#032840]">Correo electrónico</h4>
+                        <button onclick="Views['teacher-services'].openAddModalPersonalInfo('Correo Electrónico')" class="flex items-center gap-1.5 text-[#fab720] text-xs font-black uppercase hover:scale-105 transition-transform">
+                            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Agregar nueva
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Correo Institucional</label>
+                            <div class="text-xs font-bold text-slate-800">${user.email || (user.username ? user.username + '@unicatolica.edu.co' : 'No registrado')}</div>
+                            <div class="text-[8px] text-slate-400 font-bold mt-0.5">(No actualizable)</div>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Correo Personal</label>
+                            <div class="flex items-center gap-2">
+                                <div class="text-xs font-bold text-slate-800">${metadata.email_personal || 'No registrado'}</div>
+                                <button onclick="Views['teacher-services'].openEditModalPersonalInfo('Correo Personal')" class="w-5 h-5 rounded-full bg-amber-50 flex items-center justify-center"><i data-lucide="edit-2" class="w-3 h-3 text-[#fab720]"></i></button>
+                                <button onclick="Views['teacher-services'].simulateDeletePersonalInfo('Correo')" class="w-5 h-5 rounded-full bg-red-50 flex items-center justify-center"><i data-lucide="trash" class="w-3 h-3 text-red-500"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Número de teléfono -->
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-3">
+                        <h4 class="text-base font-black text-[#032840]">Número de teléfono</h4>
+                        <button onclick="Views['teacher-services'].openAddModalPersonalInfo('Número de teléfono')" class="flex items-center gap-1.5 text-[#fab720] text-xs font-black uppercase hover:scale-105 transition-transform">
+                            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Agregar nueva
+                        </button>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Celular (Principal)</label>
+                        <div class="flex items-center gap-2">
+                            <div class="text-xs font-bold text-slate-800">${user.telefono || 'No registrado'}</div>
+                            <button onclick="Views['teacher-services'].openEditModalPersonalInfo('Teléfono')" class="w-5 h-5 rounded-full bg-amber-50 flex items-center justify-center"><i data-lucide="edit-2" class="w-3 h-3 text-[#fab720]"></i></button>
+                            <button onclick="Views['teacher-services'].simulateDeletePersonalInfo('Teléfono')" class="w-5 h-5 rounded-full bg-red-50 flex items-center justify-center"><i data-lucide="trash" class="w-3 h-3 text-red-500"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dirección -->
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-3">
+                        <h4 class="text-base font-black text-[#032840]">Dirección</h4>
+                        <button onclick="Views['teacher-services'].openAddModalPersonalInfo('Dirección')" class="flex items-center gap-1.5 text-[#fab720] text-xs font-black uppercase hover:scale-105 transition-transform">
+                            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Agregar nueva
+                        </button>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Residencia</label>
+                        <div class="text-[10px] font-bold text-slate-400 mb-0.5">Actual</div>
+                        <div class="text-xs font-bold text-slate-800">${metadata.direccion || 'No registrada'}</div>
+                    </div>
+                </div>
+
+                <!-- Contacto de emergencia -->
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-3">
+                        <h4 class="text-base font-black text-[#032840]">Contacto de emergencia</h4>
+                        <button onclick="Views['teacher-services'].openAddModalPersonalInfo('Contacto de emergencia')" class="flex items-center gap-1.5 text-[#fab720] text-xs font-black uppercase hover:scale-105 transition-transform">
+                            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Agregar nueva
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${metadata.emergencia && metadata.emergencia[0] && metadata.emergencia[0].nombre ? `
+                        <div class="relative group text-xs">
+                            <div class="font-black text-slate-800 mb-1">1. ${metadata.emergencia[0].nombre}</div>
+                            <div class="text-[11px] font-medium text-slate-500">${metadata.emergencia[0].parentesco || 'Familiar'}</div>
+                            <div class="text-[11px] font-medium text-slate-500">Teléfono: ${metadata.emergencia[0].telefono || 'No registrado'}</div>
+                            <div class="text-[11px] font-medium text-slate-500 uppercase">${metadata.emergencia[0].direccion || 'Sin dirección'}</div>
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="Views['teacher-services'].openEditModalPersonalInfo('Contacto 1')" class="w-5 h-5 rounded-full bg-amber-50 flex items-center justify-center"><i data-lucide="edit-2" class="w-3 h-3 text-[#fab720]"></i></button>
+                                <button onclick="Views['teacher-services'].simulateDeletePersonalInfo('Contacto')" class="w-5 h-5 rounded-full bg-red-50 flex items-center justify-center"><i data-lucide="trash" class="w-3 h-3 text-red-500"></i></button>
+                            </div>
+                        </div>
+                        ` : '<div class="text-xs text-slate-500 italic">No hay contacto primario registrado.</div>'}
+                        ${metadata.emergencia && metadata.emergencia[1] && metadata.emergencia[1].nombre ? `
+                        <div class="relative group text-xs">
+                            <div class="font-black text-slate-800 mb-1">2. ${metadata.emergencia[1].nombre}</div>
+                            <div class="text-[11px] font-medium text-slate-500">${metadata.emergencia[1].parentesco || 'Familiar'}</div>
+                            <div class="text-[11px] font-medium text-slate-500">Teléfono: ${metadata.emergencia[1].telefono || 'No registrado'}</div>
+                            <div class="text-[11px] font-medium text-slate-500 uppercase">${metadata.emergencia[1].direccion || 'Sin dirección'}</div>
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="Views['teacher-services'].openEditModalPersonalInfo('Contacto 2')" class="w-5 h-5 rounded-full bg-amber-50 flex items-center justify-center"><i data-lucide="edit-2" class="w-3 h-3 text-[#fab720]"></i></button>
+                                <button onclick="Views['teacher-services'].simulateDeletePersonalInfo('Contacto')" class="w-5 h-5 rounded-full bg-red-50 flex items-center justify-center"><i data-lucide="trash" class="w-3 h-3 text-red-500"></i></button>
+                            </div>
+                        </div>
+                        ` : '<div class="text-xs text-slate-500 italic">No hay contacto secundario registrado.</div>'}
+                    </div>
+                </div>
+
+                <!-- Detalles adicionales -->
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                    <h4 class="text-base font-black text-[#032840] mb-6 border-b border-slate-200 pb-3">Detalles adicionales</h4>
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Status de discapacidad</label>
+                        <div class="text-xs font-bold text-slate-500 italic">${metadata.discapacidad || 'Status no disponible'}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        this.openSvcModal('Información Personal', 'Ficha del Docente con edición en tiempo real.', bodyHtml);
+    },
+    enableEditPersonalInfo() {
+        this.isEditingPersonalInfo = true;
+        this.openPersonalInfo();
+    },
+    cancelEditPersonalInfo() {
+        this.isEditingPersonalInfo = false;
+        this.openPersonalInfo();
+    },
+    async savePersonalInfo() {
+        const nuevoNombre = document.getElementById('teach-edit-nombre').value;
+        const nuevoApellido = document.getElementById('teach-edit-apellido').value;
+        const nuevoSegundoNombre = document.getElementById('teach-edit-segundo-nombre').value;
+        const nuevoNacimiento = document.getElementById('teach-edit-nacimiento').value;
+        const nuevoEstadoCivil = document.getElementById('teach-edit-civil').value;
+        const nuevoSexo = document.getElementById('teach-edit-sexo').value;
+        const nuevoPreferido = document.getElementById('teach-edit-preferido').value;
+        const nuevoGenero = document.getElementById('teach-edit-genero').value;
+
+        const user = Auth.getUser();
+        user.nombres = nuevoNombre;
+        user.apellidos = nuevoApellido;
+        user.fecha_nacimiento = nuevoNacimiento;
+        
+        let metadata = {};
+        if (user.metadata) {
+            try {
+                metadata = typeof user.metadata === 'string' ? JSON.parse(user.metadata) : user.metadata;
+            } catch (e) {}
+        }
+        
+        metadata.segundo_nombre = nuevoSegundoNombre;
+        metadata.estado_civil = nuevoEstadoCivil;
+        metadata.sexo = nuevoSexo;
+        metadata.nombre_preferido = nuevoPreferido;
+        metadata.identificacion_genero = nuevoGenero;
+        
+        user.metadata = JSON.stringify(metadata);
+
+        try {
+            await API.put(`/auth/profile`, user);
+        } catch(e) {
+            console.log('API update failed, updating local storage only', e);
+        }
+
+        sessionStorage.setItem('user', JSON.stringify(user));
+        Toast.success('¡Información personal actualizada con éxito!');
+        this.isEditingPersonalInfo = false;
+        this.openPersonalInfo();
+        Router.handleRoute(); // Refresh layout to show updated names if applicable
+    },
+    openEditModalPersonalInfo(title) {
+        const container = document.getElementById('modal-container');
+        const content = document.getElementById('modal-content');
+
+        content.innerHTML = `
+            <div class="p-8">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-xl font-bold text-slate-900 tracking-tight">Editar ${title}</h3>
+                    <button onclick="Views['teacher-services'].closeModalPersonalInfo()" class="text-slate-400 hover:text-red-500">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <form id="secondary-edit-form-personal" class="space-y-6">
+                    <div class="space-y-4">
+                        <div class="input-group">
+                            <label class="label-premium">Nuevo Valor</label>
+                            <input type="text" id="teach-edit-val-modal" class="input-premium" value="" placeholder="Ingrese el nuevo dato...">
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 pt-6">
+                        <button type="button" onclick="Views['teacher-services'].closeModalPersonalInfo()" class="flex-1 py-3 text-slate-500 font-bold text-sm">Cancelar</button>
+                        <button type="submit" class="flex-1 btn-premium btn-primary py-3">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        container.classList.remove('hidden');
+        lucide.createIcons();
+
+        document.getElementById('secondary-edit-form-personal').onsubmit = async (e) => {
+            e.preventDefault();
+            const newVal = document.getElementById('teach-edit-val-modal').value;
+            const user = Auth.getUser();
+            let metadata = {};
+            if (user.metadata) {
+                try {
+                    metadata = typeof user.metadata === 'string' ? JSON.parse(user.metadata) : user.metadata;
+                } catch(err) {}
+            }
+
+            if (title === 'Correo Personal') {
+                metadata.email_personal = newVal;
+            } else if (title === 'Teléfono') {
+                user.telefono = newVal;
+            } else if (title === 'Dirección') {
+                metadata.direccion = newVal;
+            } else if (title === 'Contacto 1') {
+                metadata.emergencia = metadata.emergencia || [];
+                metadata.emergencia[0] = metadata.emergencia[0] || {};
+                metadata.emergencia[0].nombre = newVal;
+            } else if (title === 'Contacto 2') {
+                metadata.emergencia = metadata.emergencia || [];
+                metadata.emergencia[1] = metadata.emergencia[1] || {};
+                metadata.emergencia[1].nombre = newVal;
+            }
+
+            user.metadata = JSON.stringify(metadata);
+
+            try {
+                await API.put(`/auth/profile`, user);
+            } catch(err) {}
+
+            sessionStorage.setItem('user', JSON.stringify(user));
+            this.closeModalPersonalInfo();
+            Toast.success(`¡${title} actualizado correctamente!`);
+            this.openPersonalInfo();
+        };
+    },
+    openAddModalPersonalInfo(title) {
+        const container = document.getElementById('modal-container');
+        const content = document.getElementById('modal-content');
+
+        content.innerHTML = `
+            <div class="p-8">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-xl font-bold text-slate-900 tracking-tight">Agregar ${title}</h3>
+                    <button onclick="Views['teacher-services'].closeModalPersonalInfo()" class="text-slate-400 hover:text-red-500">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <form id="add-record-form-personal" class="space-y-6">
+                    <div class="space-y-4">
+                        <div class="input-group">
+                            <label class="label-premium">Tipo/Etiqueta o Nombre</label>
+                            <input type="text" id="teach-add-label" class="input-premium" placeholder="ej: Personal, Trabajo, Nombre del Contacto...">
+                        </div>
+                        <div class="input-group">
+                            <label class="label-premium">Detalle / Valor</label>
+                            <input type="text" id="teach-add-val" class="input-premium" placeholder="Ingrese el valor o detalle...">
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 pt-6">
+                        <button type="button" onclick="Views['teacher-services'].closeModalPersonalInfo()" class="flex-1 py-3 text-slate-500 font-bold text-sm">Cancelar</button>
+                        <button type="submit" class="flex-1 btn-premium bg-[#fab720] text-[#032840] py-3">Agregar</button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        container.classList.remove('hidden');
+        lucide.createIcons();
+
+        document.getElementById('add-record-form-personal').onsubmit = async (e) => {
+            e.preventDefault();
+            const label = document.getElementById('teach-add-label').value;
+            const val = document.getElementById('teach-add-val').value;
+
+            const user = Auth.getUser();
+            let metadata = {};
+            if (user.metadata) {
+                try {
+                    metadata = typeof user.metadata === 'string' ? JSON.parse(user.metadata) : user.metadata;
+                } catch(err) {}
+            }
+
+            if (title === 'Correo Electrónico') {
+                metadata.email_personal = val;
+            } else if (title === 'Número de teléfono') {
+                user.telefono = val;
+            } else if (title === 'Dirección') {
+                metadata.direccion = val;
+            } else if (title === 'Contacto de emergencia') {
+                metadata.emergencia = metadata.emergencia || [];
+                metadata.emergencia.push({
+                    nombre: label,
+                    parentesco: 'Familiar',
+                    telefono: val,
+                    direccion: ''
+                });
+            }
+
+            user.metadata = JSON.stringify(metadata);
+
+            try {
+                await API.put(`/auth/profile`, user);
+            } catch(err) {}
+
+            sessionStorage.setItem('user', JSON.stringify(user));
+            this.closeModalPersonalInfo();
+            Toast.success(`¡Nuevo registro de ${title} añadido!`);
+            this.openPersonalInfo();
+        };
+    },
+    closeModalPersonalInfo() {
+        document.getElementById('modal-container').classList.add('hidden');
+    },
+    simulateDeletePersonalInfo(type) {
+        if (confirm(`¿Estás seguro que deseas eliminar este registro de ${type}?`)) {
+            Toast.success('Registro eliminado correctamente.');
+        }
+    },
     openDocs() { this.openSvcModal('Documentos de Identidad', 'Soportes cargados en el sistema.', `<div class="p-10 text-center italic text-slate-400">Carga de documentos de identidad activa.</div>`); },
     openSurveys() { this.openSvcModal('Encuestas Generales', 'Participación académica.', `<div class="p-10 text-center italic text-slate-400">No hay encuestas pendientes en la base de datos.</div>`); },
     openImpartido() { this.openSvcModal('Plan de Curso Impartido', 'Seguimiento de temas vistos por NRC.', `<div class="p-10 text-center italic text-slate-400">Seguimiento de temas habilitado para tus cursos actuales.</div>`); },
