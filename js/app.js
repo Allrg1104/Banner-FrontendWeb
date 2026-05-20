@@ -58,8 +58,15 @@ const Layout = {
                         ${user.rol === 'director' || user.rol === 'decano' ? this.navItem('/director', 'bar-chart-3', 'Métricas SIS') : ''}
                         ${user.rol === 'director' || user.rol === 'decano' ? this.navItem('/director-asistencia', 'clipboard-check', 'Asistencias') : ''}
                         ${user.rol === 'director' || user.rol === 'decano' ? this.navItem('/director-evaluations', 'star', 'Evaluación Docente') : ''}
-                        ${user.rol === 'registro' ? this.navItem('/registro', 'users', 'Gestión Usuarios') : ''}
-                        ${user.rol === 'registro' ? this.navItem('/salones', 'map', 'Sedes y Salones') : ''}
+                        ${user.rol === 'registro' ? `
+                            ${this.navItem('/registro', 'users', 'Gestión Usuarios')}
+                            ${this.navItem('/registro-solicitudes', 'clipboard-list', 'Solicitudes')}
+                            ${this.navItem('/registro-cursos', 'book-open', 'Cursos')}
+                            <div class="space-y-1">
+                                ${this.navSubItem('/registro-inscripcion', 'user-plus', 'Inscripción Estudiantes')}
+                            </div>
+                            ${this.navItem('/salones', 'map', 'Sedes y Salones')}
+                        ` : ''}
                         ${user.rol === 'financiero' ? this.navItem('/financial', 'wallet', 'Cartera') : ''}
                         ${user.rol === 'admin' ? this.navItem('/admin', 'shield-check', 'Admin Usuarios') : ''}
                         
@@ -131,6 +138,16 @@ const Layout = {
         `;
     },
 
+    navSubItem(path, icon, label) {
+        const isActive = window.location.hash === '#' + path;
+        return `
+            <a href="#${path}" class="flex items-center gap-3 pl-8 pr-4 py-2 rounded-xl transition-all duration-300 group ${isActive ? 'bg-[#fab720]/20 text-[#fab720] border-l-4 border-[#fab720]' : 'text-slate-400/80 hover:text-white hover:bg-white/5'}">
+                <i data-lucide="${icon}" class="w-4 h-4 ${isActive ? 'text-[#fab720]' : 'text-slate-400 group-hover:text-[#fab720]'}"></i>
+                <span class="font-bold text-xs tracking-tight">${label}</span>
+            </a>
+        `;
+    },
+
     getCurrentRouteName() {
         const hash = window.location.hash || '#/';
         const routes = {
@@ -142,7 +159,10 @@ const Layout = {
             '#/director': 'Analítica SIS',
             '#/director-asistencia': 'Asistencias programa',
             '#/director-evaluations': 'Evaluación Docente',
-            '#/registro': 'Registro Académico',
+            '#/registro': 'Gestión de Usuarios',
+            '#/registro-solicitudes': 'Solicitudes Académicas',
+            '#/registro-cursos': 'Gestión de Cursos',
+            '#/registro-inscripcion': 'Inscripción Estudiantes',
             '#/salones': 'Sedes y Salones',
             '#/financial': 'Módulo Financiero',
             '#/admin': 'Admin Usuarios',
@@ -186,6 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
         '/director-asistencia': 'director-attendance',
         '/director-evaluations': 'director-evaluations',
         '/registro': 'registro',
+        '/registro-solicitudes': 'registro',
+        '/registro-cursos': 'registro',
+        '/registro-inscripcion': 'registro',
         '/salones': 'salones',
         '/requests': 'requests',
         '/financial': 'financial',

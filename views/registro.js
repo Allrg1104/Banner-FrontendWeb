@@ -13,6 +13,18 @@ Views.registro = {
     solicitudes: null,
 
     async render() {
+        // Automatically sync currentTab with the routing hash
+        const hash = window.location.hash;
+        if (hash === '#/registro-solicitudes') {
+            this.currentTab = 'solicitudes';
+        } else if (hash === '#/registro-cursos') {
+            this.currentTab = 'cursos';
+        } else if (hash === '#/registro-inscripcion') {
+            this.currentTab = 'inscripcion';
+        } else {
+            this.currentTab = 'directorio';
+        }
+
         if (this.users.length === 0 && !this.searchQuery) {
             await this.loadUsers();
         }
@@ -30,38 +42,33 @@ Views.registro = {
             u.documento?.includes(this.searchQuery)
         );
 
+        // Header copy depending on current tab
+        let headerTitle = "Directorio Central";
+        let headerSubtitle = "Gestión integral de la población institucional y fichas maestras.";
+
+        if (this.currentTab === 'solicitudes') {
+            headerTitle = "Solicitudes Académicas";
+            headerSubtitle = "Procesamiento de peticiones, retiros y reingresos estudiantiles.";
+        } else if (this.currentTab === 'cursos') {
+            headerTitle = "Programación de Cursos";
+            headerSubtitle = "Oferta académica y asignación horaria para el periodo activo.";
+        } else if (this.currentTab === 'inscripcion') {
+            headerTitle = "Inscripción Estudiantes";
+            headerSubtitle = "Matrícula directa de estudiantes a los cursos ofertados.";
+        }
+
         return `
             <div class="space-y-10 pb-24 animate-fade-in">
                 
                 <!-- Registro Header -->
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-8 bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
                     <div>
-                        <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight">Registro Académico</h2>
-                        <p class="text-slate-500 mt-2 italic font-medium">Gestión integral de la población institucional y trámites curriculares.</p>
+                        <h2 class="text-4xl font-extrabold text-[#032840] tracking-tight">${headerTitle}</h2>
+                        <p class="text-slate-500 mt-2 italic font-medium">${headerSubtitle}</p>
                     </div>
                 </div>
 
-                <!-- Navigation Tabs -->
-                <div class="flex border-b border-slate-200">
-                    <button onclick="Views.registro.setTab('directorio')" 
-                        class="px-8 py-4 text-sm font-black uppercase tracking-widest transition-all ${this.currentTab === 'directorio' ? 'border-b-4 border-[#fab720] text-[#032840]' : 'text-slate-400 hover:text-slate-600'}">
-                        Directorio Central
-                    </button>
-                    <button onclick="Views.registro.setTab('solicitudes')" 
-                        class="px-8 py-4 text-sm font-black uppercase tracking-widest transition-all ${this.currentTab === 'solicitudes' ? 'border-b-4 border-[#fab720] text-[#032840]' : 'text-slate-400 hover:text-slate-600'}">
-                        Solicitudes Pendientes
-                    </button>
-                    <button onclick="Views.registro.setTab('cursos')" 
-                        class="px-8 py-4 text-sm font-black uppercase tracking-widest transition-all ${this.currentTab === 'cursos' ? 'border-b-4 border-[#fab720] text-[#032840]' : 'text-slate-400 hover:text-slate-600'}">
-                        Gestión Académica
-                    </button>
-                    <button onclick="Views.registro.setTab('inscripcion')" 
-                        class="px-8 py-4 text-sm font-black uppercase tracking-widest transition-all ${this.currentTab === 'inscripcion' ? 'border-b-4 border-[#fab720] text-[#032840]' : 'text-slate-400 hover:text-slate-600'}">
-                        Inscripción Manual
-                    </button>
-                </div>
-
-                <!-- Tab Content -->
+                <!-- Content Area -->
                 <div id="registro-content" class="min-h-[600px]">
                     ${this.currentTab === 'directorio' ? this.renderDirectorio(filteredUsers) : 
                       this.currentTab === 'solicitudes' ? this.renderSolicitudes() : 
@@ -850,8 +857,8 @@ Views.registro = {
     },
 
     setTab(tab) {
-        this.currentTab = tab;
-        this.reRender();
+        const hash = tab === 'directorio' ? '/registro' : `/registro-${tab}`;
+        window.location.hash = hash;
     },
 
     async loadCursos() {
