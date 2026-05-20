@@ -61,14 +61,28 @@ const Layout = {
                         ${user.rol === 'registro' ? `
                             ${this.navItem('/registro', 'users', 'Gestión Usuarios')}
                             ${this.navItem('/registro-solicitudes', 'clipboard-list', 'Solicitudes')}
-                            <button onclick="document.getElementById('submenu-cursos').classList.toggle('hidden')" class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 group ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? 'bg-[#fab720] text-[#032840] shadow-lg shadow-[#fab720]/20' : 'text-slate-200/60 hover:text-white hover:bg-white/5'}">
+                            <button onclick="
+                                const menu = document.getElementById('submenu-cursos');
+                                const chevron = document.getElementById('cursos-chevron');
+                                if (menu.style.maxHeight && menu.style.maxHeight !== '0px') {
+                                    menu.style.maxHeight = '0px';
+                                    menu.style.opacity = '0';
+                                    menu.style.marginTop = '0';
+                                    chevron.style.transform = 'rotate(0deg)';
+                                } else {
+                                    menu.style.maxHeight = menu.scrollHeight + 'px';
+                                    menu.style.opacity = '1';
+                                    menu.style.marginTop = '4px';
+                                    chevron.style.transform = 'rotate(180deg)';
+                                }
+                            " class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 group ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? 'bg-[#fab720] text-[#032840] shadow-lg shadow-[#fab720]/20' : 'text-slate-200/60 hover:text-white hover:bg-white/5'}">
                                 <div class="flex items-center gap-3">
                                     <i data-lucide="book-open" class="w-5 h-5 ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? 'text-[#032840]' : 'text-slate-400 group-hover:text-[#fab720]'}"></i>
                                     <span class="font-bold text-sm tracking-tight">Cursos</span>
                                 </div>
-                                <i data-lucide="chevron-down" class="w-4 h-4 ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? 'text-[#032840]/40' : 'text-slate-500 group-hover:text-slate-400'}"></i>
+                                <i id="cursos-chevron" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-300 ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? 'text-[#032840]/40' : 'text-slate-500 group-hover:text-slate-400'}" style="transform: rotate(0deg);"></i>
                             </button>
-                            <div id="submenu-cursos" class="pl-4 space-y-1 my-1 border-l border-slate-700/50 ml-6 animate-slide-down ${(window.location.hash === '#/registro-cursos' || window.location.hash === '#/registro-inscripcion') ? '' : 'hidden'}">
+                            <div id="submenu-cursos" class="pl-4 space-y-1 border-l border-slate-700/50 ml-6 overflow-hidden transition-all duration-300" style="max-height: 0px; opacity: 0; margin-top: 0;">
                                 ${this.navSubItem('/registro-cursos', 'settings', 'Mantenimiento de Cursos')}
                                 ${this.navSubItem('/registro-inscripcion', 'user-plus', 'Inscripción Estudiantes')}
                             </div>
