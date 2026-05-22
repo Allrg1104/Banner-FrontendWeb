@@ -173,13 +173,24 @@ const customConfirm = function(message, title = "Confirmación Requerida", isCri
         const cleanup = () => {
             modal.classList.add('opacity-0');
             box.classList.add('scale-95');
-            setTimeout(() => modal.classList.add('hidden'), 300);
             document.getElementById('custom-confirm-cancel').removeEventListener('click', onCancel);
             acceptBtn.removeEventListener('click', onAccept);
         };
 
-        const onCancel = () => { cleanup(); resolve(false); };
-        const onAccept = () => { cleanup(); resolve(true); };
+        const onCancel = () => {
+            cleanup();
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                resolve(false);
+            }, 300);
+        };
+        const onAccept = () => {
+            cleanup();
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                resolve(true);
+            }, 300);
+        };
 
         document.getElementById('custom-confirm-cancel').addEventListener('click', onCancel);
         acceptBtn.addEventListener('click', onAccept);
