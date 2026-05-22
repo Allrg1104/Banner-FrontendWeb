@@ -126,5 +126,66 @@ const Toast = {
     warning(msg) { this.show(msg, 'warning'); }
 };
 
+const customConfirm = function(message, title = "Confirmación Requerida", isCritical = false) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-confirm-modal');
+        const box = document.getElementById('custom-confirm-box');
+        if (!modal || !box) {
+            console.error("Global custom-confirm-modal not found in DOM");
+            resolve(confirm(message));
+            return;
+        }
+
+        document.getElementById('custom-confirm-message').innerText = message;
+        document.getElementById('custom-confirm-title').innerText = title;
+
+        const acceptBtn = document.getElementById('custom-confirm-accept');
+        const iconBg = document.getElementById('custom-confirm-icon-bg');
+        const icon = document.getElementById('custom-confirm-icon');
+
+        if (isCritical) {
+            acceptBtn.classList.remove('bg-[#032840]', 'shadow-[#032840]/30', 'hover:bg-[#032840]/90');
+            acceptBtn.classList.add('bg-red-500', 'shadow-red-500/30', 'hover:bg-red-600');
+            iconBg.classList.remove('bg-indigo-50');
+            iconBg.classList.add('bg-red-50');
+            icon.classList.remove('text-[#032840]');
+            icon.classList.add('text-red-500');
+            icon.setAttribute('data-lucide', 'alert-triangle');
+        } else {
+            acceptBtn.classList.remove('bg-red-500', 'shadow-red-500/30', 'hover:bg-red-600');
+            acceptBtn.classList.add('bg-[#032840]', 'shadow-[#032840]/30', 'hover:bg-[#032840]/90');
+            iconBg.classList.remove('bg-red-50');
+            iconBg.classList.add('bg-indigo-50');
+            icon.classList.remove('text-red-500');
+            icon.classList.add('text-[#032840]');
+            icon.setAttribute('data-lucide', 'help-circle');
+        }
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+
+        modal.classList.remove('hidden');
+        // Trigger reflow
+        void modal.offsetWidth;
+        modal.classList.remove('opacity-0');
+        box.classList.remove('scale-95');
+
+        const cleanup = () => {
+            modal.classList.add('opacity-0');
+            box.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+            document.getElementById('custom-confirm-cancel').removeEventListener('click', onCancel);
+            acceptBtn.removeEventListener('click', onAccept);
+        };
+
+        const onCancel = () => { cleanup(); resolve(false); };
+        const onAccept = () => { cleanup(); resolve(true); };
+
+        document.getElementById('custom-confirm-cancel').addEventListener('click', onCancel);
+        acceptBtn.addEventListener('click', onAccept);
+    });
+};
+
 window.API = API;
 window.Toast = Toast;
+window.customConfirm = customConfirm;

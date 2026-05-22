@@ -421,8 +421,9 @@ Views['profile'] = {
         document.getElementById('modal-container').classList.add('hidden');
     },
 
-    simulateDelete(type) {
-        if (confirm(`¿Estás seguro que deseas eliminar este registro de ${type}?`)) {
+    async simulateDelete(type) {
+        const confirmed = await window.customConfirm(`¿Estás seguro que deseas eliminar este registro de ${type}?`, 'Confirmar Eliminación', true);
+        if (confirmed) {
             Toast.success('Registro eliminado correctamente.');
         }
     }

@@ -1189,8 +1189,9 @@ Views['teacher-services'] = {
     closeModalPersonalInfo() {
         document.getElementById('modal-container').classList.add('hidden');
     },
-    simulateDeletePersonalInfo(type) {
-        if (confirm(`¿Estás seguro que deseas eliminar este registro de ${type}?`)) {
+    async simulateDeletePersonalInfo(type) {
+        const confirmed = await window.customConfirm(`¿Estás seguro que deseas eliminar este registro de ${type}?`, 'Confirmar Eliminación', true);
+        if (confirmed) {
             Toast.success('Registro eliminado correctamente.');
         }
     },

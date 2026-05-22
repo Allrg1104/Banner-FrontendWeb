@@ -684,7 +684,8 @@ Views.admin = {
     },
 
     async openResetOne(id, username) {
-        if (!confirm(`¿Estás seguro de resetear la contraseña de ${username}? Deberá cambiarla en su siguiente inicio.`)) return;
+        const confirmed = await window.customConfirm(`¿Estás seguro de resetear la contraseña de ${username}? Deberá cambiarla en su siguiente inicio.`, 'Restablecer Contraseña', true);
+        if (!confirmed) return;
 
         const newPass = prompt("Ingresa la nueva contraseña temporal (mín 8 chars):", "Academia2026!");
         if (!newPass) return;
