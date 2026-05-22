@@ -70,10 +70,10 @@ Views.registro = {
 
                 <!-- Content Area -->
                 <div id="registro-content" class="min-h-[600px]">
-                    ${this.currentTab === 'directorio' ? this.renderDirectorio(filteredUsers) : 
-                      this.currentTab === 'solicitudes' ? this.renderSolicitudes() : 
-                      this.currentTab === 'cursos' ? this.renderCursos() :
-                      this.renderInscripcion()}
+                    ${this.currentTab === 'directorio' ? this.renderDirectorio(filteredUsers) :
+                this.currentTab === 'solicitudes' ? this.renderSolicitudes() :
+                    this.currentTab === 'cursos' ? this.renderCursos() :
+                        this.renderInscripcion()}
                 </div>
             </div>
 
@@ -846,11 +846,11 @@ Views.registro = {
 
     async procesarSolicitud(id) {
         try {
-            await API.put('/registro/solicitudes/'+id+'/procesar', {});
+            await API.put('/registro/solicitudes/' + id + '/procesar', {});
             Toast.success('Solicitud en proceso');
             await this.loadSolicitudes();
             this.reRender();
-        } catch(e) {
+        } catch (e) {
             Toast.error('No se pudo procesar la solicitud');
         }
     },
@@ -937,7 +937,7 @@ Views.registro = {
     async openCreateCourse() {
         document.getElementById('course-modal').classList.remove('hidden');
         lucide.createIcons();
-        
+
         // Load materias and docentes
         try {
             const [materias, docentes] = await Promise.all([
@@ -948,17 +948,17 @@ Views.registro = {
             const matSelect = document.getElementById('cc-materia');
             const docSelect = document.getElementById('cc-docente');
 
-            matSelect.innerHTML = '<option value="">Seleccione Materia</option>' + 
+            matSelect.innerHTML = '<option value="">Seleccione Materia</option>' +
                 materias.map(m => `<option value="${m.id}">${m.nombre} (${m.codigo})</option>`).join('');
-            
-            docSelect.innerHTML = '<option value="">Seleccione Docente</option>' + 
+
+            docSelect.innerHTML = '<option value="">Seleccione Docente</option>' +
                 docentes.map(d => `<option value="${d.id}">${d.nombres} ${d.apellidos}</option>`).join('');
-            
+
             // Reset fields
             document.getElementById('create-course-form').reset();
             document.getElementById('cc-nrc').disabled = false;
             matSelect.disabled = false;
-            
+
             // Change form submit handler back to create
             const form = document.getElementById('create-course-form');
             form.onsubmit = (e) => {
@@ -1024,13 +1024,13 @@ Views.registro = {
         const horario = `${daysStr} ${start12} - ${end12}`;
 
         try {
-            const res = await API.post('/registro/cursos', { 
-                materia_id, 
-                docente_id, 
-                nrc, 
-                horario, 
-                fecha_inicio, 
-                fecha_fin 
+            const res = await API.post('/registro/cursos', {
+                materia_id,
+                docente_id,
+                nrc,
+                horario,
+                fecha_inicio,
+                fecha_fin
             });
             if (res.success) {
                 Toast.success('¡Curso publicado exitosamente!');
@@ -1253,13 +1253,13 @@ Views.registro = {
         try {
             await API.post('/registro/cursos/inscribir-estudiante', { student_id: studentId, curso_id: cursoId });
             Toast.success('¡Estudiante matriculado con éxito!');
-            
+
             // Reset fields
             document.getElementById('selected-student-id').value = '';
             document.getElementById('selected-course-id').value = '';
             document.getElementById('student-trigger-text').innerHTML = '<span class="text-slate-400 italic">Buscar y seleccionar estudiante...</span>';
             document.getElementById('course-trigger-text').innerHTML = '<span class="text-slate-400 italic">Buscar y seleccionar curso...</span>';
-            
+
             // Refresh local state lists
             this.cursosList = await API.get('/registro/cursos/activos');
             this.loadStudentCourses(studentId); // Reload student's courses to show new one
@@ -1271,13 +1271,13 @@ Views.registro = {
     async loadStudentCourses(studentId) {
         const container = document.getElementById('student-courses-container');
         if (!container) return;
-        
+
         container.classList.remove('hidden');
         container.innerHTML = `<div class="text-center py-4"><div class="loader-small mx-auto"></div></div>`;
-        
+
         try {
             const courses = await API.get(`/registro/estudiantes/${studentId}/cursos`);
-            
+
             if (courses.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-6 bg-slate-50 rounded-2xl border border-slate-100">
@@ -1332,7 +1332,7 @@ Views.registro = {
     },
 
     async unenrollAllCourses(studentId) {
-        const confirmed = await this.customConfirm('⚠️ ALERTA CRÍTICA: ¿Estás TOTALMENTE seguro de retirar al estudiante de TODOS sus cursos activos? Esta acción es irreversible.', 'Retiro Total', true);
+        const confirmed = await this.customConfirm('ALERTA CRÍTICA: ¿Estás TOTALMENTE seguro de retirar al estudiante de TODOS sus cursos activos? Esta acción es irreversible.', 'Retiro Total', true);
         if (!confirmed) return;
         try {
             await API.delete(`/registro/estudiantes/${studentId}/cursos`);
@@ -1349,7 +1349,7 @@ Views.registro = {
 
         document.getElementById('course-modal').classList.remove('hidden');
         lucide.createIcons();
-        
+
         // Load materias and docentes
         try {
             const [materias, docentes] = await Promise.all([
@@ -1360,30 +1360,30 @@ Views.registro = {
             const matSelect = document.getElementById('cc-materia');
             const docSelect = document.getElementById('cc-docente');
 
-            matSelect.innerHTML = '<option value="">Seleccione Materia</option>' + 
+            matSelect.innerHTML = '<option value="">Seleccione Materia</option>' +
                 materias.map(m => `<option value="${m.id}" ${course.materia_id === m.id ? 'selected' : ''}>${m.nombre} (${m.codigo})</option>`).join('');
-            
-            docSelect.innerHTML = '<option value="">Seleccione Docente</option>' + 
+
+            docSelect.innerHTML = '<option value="">Seleccione Docente</option>' +
                 docentes.map(d => `<option value="${d.id}" ${course.docente_id === d.id ? 'selected' : ''}>${d.nombres} ${d.apellidos}</option>`).join('');
-            
+
             // Pre-fill
             document.getElementById('cc-nrc').value = course.nrc;
             document.getElementById('cc-nrc').disabled = true; // No se puede cambiar el NRC
             matSelect.disabled = true; // Tampoco la materia
-            
+
             document.getElementById('cc-fecha-inicio').value = course.fecha_inicio || '';
             document.getElementById('cc-fecha-fin').value = course.fecha_fin || '';
-            
+
             // Parse horario
             const parts = course.horario.split(' ');
             if (parts.length >= 2) {
                 const days = parts[0].split('-');
                 const times = parts[1].split('-');
-                
+
                 document.querySelectorAll('input[name="cc-days"]').forEach(cb => {
                     cb.checked = days.includes(cb.value);
                 });
-                
+
                 if (times.length === 2) {
                     document.getElementById('cc-start').value = times[0];
                     document.getElementById('cc-end').value = times[1];
@@ -1467,11 +1467,11 @@ Views.registro = {
             const box = document.getElementById('custom-confirm-box');
             document.getElementById('custom-confirm-message').innerText = message;
             document.getElementById('custom-confirm-title').innerText = title;
-            
+
             const acceptBtn = document.getElementById('custom-confirm-accept');
             const iconBg = document.getElementById('custom-confirm-icon-bg');
             const icon = document.getElementById('custom-confirm-icon');
-            
+
             if (isCritical) {
                 acceptBtn.classList.remove('bg-[#032840]', 'shadow-[#032840]/30', 'hover:bg-[#032840]/90');
                 acceptBtn.classList.add('bg-red-500', 'shadow-red-500/30', 'hover:bg-red-600');
