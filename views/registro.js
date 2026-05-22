@@ -877,11 +877,25 @@ Views.registro = {
             } else {
                 container.innerHTML = cursos.map(c => `
                     <div class="card-premium bg-white p-6 border-none shadow-lg hover:shadow-xl transition-all group">
-                        <div class="flex justify-between items-start mb-4">
+                        <div class="flex justify-between items-start mb-4 relative">
                             <div class="p-3 rounded-xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all">
                                 <i data-lucide="book" class="w-5 h-5"></i>
                             </div>
-                            <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">NRC: ${c.nrc}</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg">NRC: ${c.nrc}</span>
+                                <div class="relative group/menu">
+                                    <button class="p-1 text-slate-300 hover:text-slate-600 transition-colors cursor-pointer">
+                                        <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                                    </button>
+                                    <div class="absolute right-0 top-6 bg-white rounded-xl shadow-xl border border-slate-100 p-1 w-40 opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-10">
+                                        <!-- Opciones -->
+                                        <button onclick="Views.registro.openEditCourse(${c.id})" class="w-full text-left px-3 py-2 text-[10px] font-black uppercase text-slate-600 hover:bg-slate-50 rounded-lg">Editar Curso</button>
+                                        ${c.salon_id ? `<button onclick="Views.registro.removeSalon(${c.id})" class="w-full text-left px-3 py-2 text-[10px] font-black uppercase text-[#fab720] hover:bg-amber-50 rounded-lg">Liberar Aula</button>` : ''}
+                                        <div class="h-px bg-slate-100 my-1"></div>
+                                        <button onclick="Views.registro.deleteCourse(${c.id})" class="w-full text-left px-3 py-2 text-[10px] font-black uppercase text-red-500 hover:bg-red-50 rounded-lg">Eliminar</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <h4 class="text-base font-black text-slate-900 mb-1 truncate">${c.asignatura}</h4>
                         <p class="text-xs text-slate-500 font-medium mb-4">${c.nombres} ${c.apellidos}</p>
@@ -924,6 +938,23 @@ Views.registro = {
             
             docSelect.innerHTML = '<option value="">Seleccione Docente</option>' + 
                 docentes.map(d => `<option value="${d.id}">${d.nombres} ${d.apellidos}</option>`).join('');
+            
+            // Reset fields
+            document.getElementById('create-course-form').reset();
+            document.getElementById('cc-nrc').disabled = false;
+            matSelect.disabled = false;
+            
+            // Change form submit handler back to create
+            const form = document.getElementById('create-course-form');
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                this.handleCreateCourse();
+            };
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = 'Publicar Curso en Oferta Académica';
+            submitBtn.className = 'w-full btn-premium bg-emerald-600 text-white py-5 rounded-2xl shadow-xl shadow-emerald-100 font-black uppercase tracking-widest';
+
         } catch (e) {
             Toast.error('Error al cargar datos académicos');
         }
@@ -1112,6 +1143,10 @@ Views.registro = {
                         <i data-lucide="check-circle" class="w-4 h-4"></i>
                     </button>
                 </div>
+
+                <!-- Lista de cursos matriculados (se llena dinámicamente) -->
+                <div id="student-courses-container" class="mt-12 hidden">
+                </div>
             </div>
         `;
     },
@@ -1132,10 +1167,10 @@ Views.registro = {
     },
 
     filterStudentDropdown(query) {
-        const q = query.toLowerCase();
+        const q = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         const options = document.getElementById('student-options').children;
         for (const opt of options) {
-            const text = opt.innerText.toLowerCase();
+            const text = opt.innerText.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
             opt.style.display = text.includes(q) ? 'flex' : 'none';
         }
     },
@@ -1148,6 +1183,7 @@ Views.registro = {
             hiddenInput.value = id;
             triggerText.innerHTML = `<span class="font-black text-slate-800">${name} ${lastname} ${doc ? `(${doc})` : ''}</span>`;
             panel.classList.add('hidden');
+            this.loadStudentCourses(id);
         }
     },
 
@@ -1167,10 +1203,10 @@ Views.registro = {
     },
 
     filterCourseDropdown(query) {
-        const q = query.toLowerCase();
+        const q = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         const options = document.getElementById('course-options').children;
         for (const opt of options) {
-            const text = opt.innerText.toLowerCase();
+            const text = opt.innerText.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
             opt.style.display = text.includes(q) ? 'flex' : 'none';
         }
     },
@@ -1211,8 +1247,198 @@ Views.registro = {
             
             // Refresh local state lists
             this.cursosList = await API.get('/registro/cursos/activos');
+            this.loadStudentCourses(studentId); // Reload student's courses to show new one
         } catch (e) {
             Toast.error(e.error || e.message || 'Error al matricular estudiante');
+        }
+    },
+
+    async loadStudentCourses(studentId) {
+        const container = document.getElementById('student-courses-container');
+        if (!container) return;
+        
+        container.classList.remove('hidden');
+        container.innerHTML = `<div class="text-center py-4"><div class="loader-small mx-auto"></div></div>`;
+        
+        try {
+            const courses = await API.get(`/registro/estudiantes/${studentId}/cursos`);
+            
+            if (courses.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-6 bg-slate-50 rounded-2xl border border-slate-100">
+                        <i data-lucide="inbox" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">El estudiante no tiene cursos matriculados</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="flex justify-between items-center mb-4 px-2">
+                        <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-[#032840]">Cursos Matriculados Actualmente</h4>
+                        <button onclick="Views.registro.unenrollAllCourses(${studentId})" class="text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 px-4 py-2 rounded-xl transition-colors border border-transparent hover:border-red-100 flex items-center gap-1">
+                            <i data-lucide="trash-2" class="w-3 h-3"></i> Retirar de Todos
+                        </button>
+                    </div>
+                    <div class="space-y-3">
+                        ${courses.map(c => `
+                            <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-white hover:shadow-lg transition-all group">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                                        <i data-lucide="book" class="w-4 h-4 text-indigo-500"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-black text-slate-800">${c.asignatura} <span class="text-[9px] bg-indigo-100/50 text-indigo-700 px-2 py-0.5 rounded-lg ml-2">NRC ${c.nrc}</span></div>
+                                        <div class="text-[10px] font-bold text-slate-400 mt-1">${c.horario} | ${c.nombres} ${c.apellidos}</div>
+                                    </div>
+                                </div>
+                                <button onclick="Views.registro.unenrollCourse(${studentId}, ${c.id})" class="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Retirar de este curso">
+                                    <i data-lucide="user-minus" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            lucide.createIcons();
+        } catch (e) {
+            container.innerHTML = `<div class="text-center py-4 text-xs font-bold text-red-500">Error cargando cursos del estudiante</div>`;
+        }
+    },
+
+    async unenrollCourse(studentId, cursoId) {
+        if (!confirm('ATENCIÓN: ¿Estás seguro de que deseas retirar a este estudiante del curso seleccionado?')) return;
+        try {
+            await API.delete(`/registro/estudiantes/${studentId}/cursos/${cursoId}`);
+            Toast.success('Estudiante retirado del curso exitosamente');
+            this.loadStudentCourses(studentId);
+        } catch (e) {
+            Toast.error('Error al retirar estudiante');
+        }
+    },
+
+    async unenrollAllCourses(studentId) {
+        if (!confirm('⚠️ ALERTA CRÍTICA: ¿Estás TOTALMENTE seguro de retirar al estudiante de TODOS sus cursos activos? Esta acción es irreversible.')) return;
+        try {
+            await API.delete(`/registro/estudiantes/${studentId}/cursos`);
+            Toast.success('Estudiante retirado de todos los cursos exitosamente');
+            this.loadStudentCourses(studentId);
+        } catch (e) {
+            Toast.error('Error al retirar estudiante');
+        }
+    },
+
+    async openEditCourse(id) {
+        const course = this.cursosList.find(c => c.id === id);
+        if (!course) return;
+
+        document.getElementById('course-modal').classList.remove('hidden');
+        lucide.createIcons();
+        
+        // Load materias and docentes
+        try {
+            const [materias, docentes] = await Promise.all([
+                API.get('/registro/materias'),
+                API.get('/registro/docentes')
+            ]);
+
+            const matSelect = document.getElementById('cc-materia');
+            const docSelect = document.getElementById('cc-docente');
+
+            matSelect.innerHTML = '<option value="">Seleccione Materia</option>' + 
+                materias.map(m => `<option value="${m.id}" ${course.materia_id === m.id ? 'selected' : ''}>${m.nombre} (${m.codigo})</option>`).join('');
+            
+            docSelect.innerHTML = '<option value="">Seleccione Docente</option>' + 
+                docentes.map(d => `<option value="${d.id}" ${course.docente_id === d.id ? 'selected' : ''}>${d.nombres} ${d.apellidos}</option>`).join('');
+            
+            // Pre-fill
+            document.getElementById('cc-nrc').value = course.nrc;
+            document.getElementById('cc-nrc').disabled = true; // No se puede cambiar el NRC
+            matSelect.disabled = true; // Tampoco la materia
+            
+            document.getElementById('cc-fecha-inicio').value = course.fecha_inicio || '';
+            document.getElementById('cc-fecha-fin').value = course.fecha_fin || '';
+            
+            // Parse horario
+            const parts = course.horario.split(' ');
+            if (parts.length >= 2) {
+                const days = parts[0].split('-');
+                const times = parts[1].split('-');
+                
+                document.querySelectorAll('input[name="cc-days"]').forEach(cb => {
+                    cb.checked = days.includes(cb.value);
+                });
+                
+                if (times.length === 2) {
+                    document.getElementById('cc-start').value = times[0];
+                    document.getElementById('cc-end').value = times[1];
+                }
+            }
+
+            // Change form submit handler to update instead of create
+            const form = document.getElementById('create-course-form');
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                this.handleUpdateCourse(id);
+            };
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = 'Actualizar Datos del Curso';
+            submitBtn.className = 'w-full btn-premium bg-[#fab720] text-[#032840] py-5 rounded-2xl shadow-xl shadow-amber-100 font-black uppercase tracking-widest';
+
+        } catch (e) {
+            Toast.error('Error al cargar datos académicos');
+        }
+    },
+
+    async handleUpdateCourse(id) {
+        const docente_id = document.getElementById('cc-docente').value;
+        const fecha_inicio = document.getElementById('cc-fecha-inicio').value;
+        const fecha_fin = document.getElementById('cc-fecha-fin').value;
+        const start = document.getElementById('cc-start').value;
+        const end = document.getElementById('cc-end').value;
+
+        const selectedDays = Array.from(document.querySelectorAll('input[name="cc-days"]:checked')).map(cb => cb.value);
+
+        if (selectedDays.length === 0) {
+            Toast.error('Seleccione al menos un día');
+            return;
+        }
+
+        const horario = `${selectedDays.join('-')} ${start}-${end}`;
+
+        try {
+            await API.put(`/registro/cursos/${id}`, {
+                docente_id,
+                horario,
+                fecha_inicio,
+                fecha_fin
+            });
+            Toast.success('Curso actualizado correctamente');
+            this.closeCourseModal();
+            this.loadCursos();
+        } catch (e) {
+            Toast.error('Error al actualizar curso');
+        }
+    },
+
+    async deleteCourse(id) {
+        if (!confirm('¿Estás seguro de que deseas eliminar (desactivar) este curso de la oferta académica?')) return;
+        try {
+            await API.delete(`/registro/cursos/${id}`);
+            Toast.success('Curso eliminado de la oferta académica');
+            this.loadCursos();
+        } catch (e) {
+            Toast.error('Error al eliminar curso');
+        }
+    },
+
+    async removeSalon(id) {
+        if (!confirm('¿Liberar el aula asignada a este curso?')) return;
+        try {
+            await API.put(`/registro/cursos/${id}/quitar-salon`);
+            Toast.success('Aula liberada correctamente');
+            this.loadCursos();
+        } catch (e) {
+            Toast.error('Error al liberar aula');
         }
     }
 };
