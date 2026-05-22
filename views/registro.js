@@ -83,6 +83,21 @@ Views.registro = {
                     <!-- Loaded dynamically -->
                 </div>
             </div>
+
+            <!-- Custom Confirm Modal -->
+            <div id="custom-confirm-modal" class="fixed inset-0 bg-[#032840]/80 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+                <div class="bg-white rounded-[32px] w-full max-w-md p-8 shadow-2xl transform scale-95 transition-transform duration-300" id="custom-confirm-box">
+                    <div class="flex items-center justify-center w-16 h-16 rounded-full bg-red-50 mx-auto mb-6" id="custom-confirm-icon-bg">
+                        <i data-lucide="alert-triangle" class="w-8 h-8 text-red-500" id="custom-confirm-icon"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-center text-[#032840] mb-2" id="custom-confirm-title">Confirmación Requerida</h3>
+                    <p class="text-sm text-center text-slate-500 font-medium mb-8" id="custom-confirm-message">¿Estás seguro de continuar con esta acción?</p>
+                    <div class="flex gap-4">
+                        <button id="custom-confirm-cancel" class="flex-1 py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors">Cancelar</button>
+                        <button id="custom-confirm-accept" class="flex-1 py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all">Sí, Continuar</button>
+                    </div>
+                </div>
+            </div>
         `;
     },
 
@@ -1305,7 +1320,8 @@ Views.registro = {
     },
 
     async unenrollCourse(studentId, cursoId) {
-        if (!confirm('ATENCIÓN: ¿Estás seguro de que deseas retirar a este estudiante del curso seleccionado?')) return;
+        const confirmed = await this.customConfirm('¿Estás seguro de que deseas retirar a este estudiante del curso seleccionado?', 'Confirmar Retiro', true);
+        if (!confirmed) return;
         try {
             await API.delete(`/registro/estudiantes/${studentId}/cursos/${cursoId}`);
             Toast.success('Estudiante retirado del curso exitosamente');
@@ -1316,7 +1332,8 @@ Views.registro = {
     },
 
     async unenrollAllCourses(studentId) {
-        if (!confirm('⚠️ ALERTA CRÍTICA: ¿Estás TOTALMENTE seguro de retirar al estudiante de TODOS sus cursos activos? Esta acción es irreversible.')) return;
+        const confirmed = await this.customConfirm('⚠️ ALERTA CRÍTICA: ¿Estás TOTALMENTE seguro de retirar al estudiante de TODOS sus cursos activos? Esta acción es irreversible.', 'Retiro Total', true);
+        if (!confirmed) return;
         try {
             await API.delete(`/registro/estudiantes/${studentId}/cursos`);
             Toast.success('Estudiante retirado de todos los cursos exitosamente');
@@ -1421,7 +1438,8 @@ Views.registro = {
     },
 
     async deleteCourse(id) {
-        if (!confirm('¿Estás seguro de que deseas eliminar (desactivar) este curso de la oferta académica?')) return;
+        const confirmed = await this.customConfirm('¿Estás seguro de que deseas eliminar (desactivar) este curso de la oferta académica?', 'Eliminar Curso', true);
+        if (!confirmed) return;
         try {
             await API.delete(`/registro/cursos/${id}`);
             Toast.success('Curso eliminado de la oferta académica');
@@ -1432,7 +1450,8 @@ Views.registro = {
     },
 
     async removeSalon(id) {
-        if (!confirm('¿Liberar el aula asignada a este curso?')) return;
+        const confirmed = await this.customConfirm('¿Liberar el aula asignada a este curso?', 'Liberar Aula', false);
+        if (!confirmed) return;
         try {
             await API.put(`/registro/cursos/${id}/quitar-salon`);
             Toast.success('Aula liberada correctamente');
@@ -1440,5 +1459,57 @@ Views.registro = {
         } catch (e) {
             Toast.error('Error al liberar aula');
         }
+    },
+
+    customConfirm(message, title = "Confirmación Requerida", isCritical = false) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('custom-confirm-modal');
+            const box = document.getElementById('custom-confirm-box');
+            document.getElementById('custom-confirm-message').innerText = message;
+            document.getElementById('custom-confirm-title').innerText = title;
+            
+            const acceptBtn = document.getElementById('custom-confirm-accept');
+            const iconBg = document.getElementById('custom-confirm-icon-bg');
+            const icon = document.getElementById('custom-confirm-icon');
+            
+            if (isCritical) {
+                acceptBtn.classList.remove('bg-[#032840]', 'shadow-[#032840]/30', 'hover:bg-[#032840]/90');
+                acceptBtn.classList.add('bg-red-500', 'shadow-red-500/30', 'hover:bg-red-600');
+                iconBg.classList.remove('bg-indigo-50');
+                iconBg.classList.add('bg-red-50');
+                icon.classList.remove('text-[#032840]');
+                icon.classList.add('text-red-500');
+                icon.setAttribute('data-lucide', 'alert-triangle');
+            } else {
+                acceptBtn.classList.remove('bg-red-500', 'shadow-red-500/30', 'hover:bg-red-600');
+                acceptBtn.classList.add('bg-[#032840]', 'shadow-[#032840]/30', 'hover:bg-[#032840]/90');
+                iconBg.classList.remove('bg-red-50');
+                iconBg.classList.add('bg-indigo-50');
+                icon.classList.remove('text-red-500');
+                icon.classList.add('text-[#032840]');
+                icon.setAttribute('data-lucide', 'help-circle');
+            }
+            lucide.createIcons();
+
+            modal.classList.remove('hidden');
+            // Trigger reflow
+            void modal.offsetWidth;
+            modal.classList.remove('opacity-0');
+            box.classList.remove('scale-95');
+
+            const cleanup = () => {
+                modal.classList.add('opacity-0');
+                box.classList.add('scale-95');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+                document.getElementById('custom-confirm-cancel').removeEventListener('click', onCancel);
+                acceptBtn.removeEventListener('click', onAccept);
+            };
+
+            const onCancel = () => { cleanup(); resolve(false); };
+            const onAccept = () => { cleanup(); resolve(true); };
+
+            document.getElementById('custom-confirm-cancel').addEventListener('click', onCancel);
+            acceptBtn.addEventListener('click', onAccept);
+        });
     }
 };
