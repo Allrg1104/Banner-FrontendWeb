@@ -1278,9 +1278,9 @@ Views.registro = {
                             <i data-lucide="trash-2" class="w-3 h-3"></i> Retirar de Todos
                         </button>
                     </div>
-                    <div class="space-y-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         ${courses.map(c => `
-                            <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-white hover:shadow-lg transition-all group">
+                            <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-white hover:shadow-lg transition-all group h-full">
                                 <div class="flex items-center gap-4">
                                     <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
                                         <i data-lucide="book" class="w-4 h-4 text-indigo-500"></i>
