@@ -103,43 +103,11 @@ function buildDirectorStudentCardHtml(st) {
                 </article>`;
 }
 
-function buildDirectorTeacherCardHtml(t) {
-  const puntaje = t.puntaje != null ? Number(t.puntaje).toFixed(1) : '—';
-  const participacion = t.participacion || 0;
-  return `
-    <article class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden director-eval-card" data-search-hay="${escapeHtml(t.nombres + ' ' + t.apellidos).toLowerCase()}">
-      <div class="px-5 py-4 flex flex-col gap-3">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0 flex-1">
-            <p class="font-bold text-slate-900 truncate">${escapeHtml(t.nombres)} ${escapeHtml(t.apellidos)}</p>
-            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">${escapeHtml(t.departamento || 'Docente')}</p>
-          </div>
-          <div class="text-right shrink-0">
-            <p class="text-[10px] font-black uppercase text-slate-400">Puntaje</p>
-            <p class="text-xl font-black ${t.puntaje >= 4.0 ? 'text-emerald-600' : t.puntaje >= 3.0 ? 'text-amber-500' : 'text-red-600'}">${puntaje}</p>
-          </div>
-        </div>
-        <div class="border-t border-slate-100 pt-3">
-          <div class="flex items-center gap-2 mb-2 text-xs font-bold text-slate-700">
-            <i data-lucide="message-square" class="w-4 h-4 text-indigo-500"></i> Comentarios
-          </div>
-          <p class="text-sm text-slate-600 italic">"${escapeHtml(t.comentarios || 'Sin comentarios registrados.')}"</p>
-          <div class="mt-3 flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span class="inline-flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> ${participacion} participaciones</span>
-          </div>
-        </div>
-      </div>
-    </article>
-  `;
-}
 
 Views.director = {
   async render() {
     try {
-      const [data, evalsData] = await Promise.all([
-        API.get('/directors/dashboard'),
-        API.get('/directors/evaluations').catch(() => ({ teachers: [] }))
-      ]);
+      const data = await API.get('/directors/dashboard');
 
       const programName = data.my_program ? data.my_program.nombre : 'Sin programa asignado';
       const students = data.students || [];
@@ -152,13 +120,6 @@ Views.director = {
 
       Views.director._plantelStudents = students;
 
-      let teachers = evalsData.teachers || [];
-      teachers.sort((a, b) => {
-        const nameA = `${a.nombres || ''} ${a.apellidos || ''}`.trim().toLowerCase();
-        const nameB = `${b.nombres || ''} ${b.apellidos || ''}`.trim().toLowerCase();
-        return nameA.localeCompare(nameB);
-      });
-      Views.director._evalTeachers = teachers;
 
       const avgProg = avgProgramProm(students);
       const totalMatriculas = countMatriculasActivas(students);
@@ -270,28 +231,6 @@ Views.director = {
                     </div>
                 </div>
 
-                <div class="card-premium border-slate-200 overflow-hidden mt-8">
-                    <div class="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 hover:bg-slate-50/80 transition-colors border-b border-slate-100/80">
-                        <button type="button" id="director-toggle-evals" class="min-w-0 flex-1 text-left" aria-expanded="false" aria-controls="director-evals-panel">
-                            <h3 class="text-xl font-bold text-slate-900">Evaluación Docente</h3>
-                            <p id="director-evals-subtitle" class="text-sm text-slate-500 mt-1" data-total="${teachers.length}">${teachers.length} docente(s) asignados al programa</p>
-                        </button>
-                        <div class="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-                            <label class="relative block w-full sm:w-64">
-                                <span class="sr-only">Buscar docente</span>
-                                <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
-                                <input type="search" id="director-evals-search" autocomplete="off" placeholder="Buscar por nombre o apellido…" class="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm font-medium text-slate-800 shadow-sm outline-none ring-indigo-500/0 transition-shadow placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/20" />
-                            </label>
-                            <button type="button" id="director-evals-chevron-btn" class="inline-flex h-11 w-11 shrink-0 items-center justify-center self-end rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:border-indigo-200 hover:bg-indigo-50/60 hover:text-indigo-700 sm:self-auto" aria-expanded="false" aria-controls="director-evals-panel" aria-label="Desplegar o contraer evaluaciones">
-                                <i data-lucide="chevron-down" id="director-evals-chevron" class="h-6 w-6 transition-transform"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div id="director-evals-panel" class="hidden border-t border-slate-100 bg-slate-50/40 p-6">
-                        <div id="director-evals-grid" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
-                        <p id="director-evals-empty" class="hidden py-8 text-center text-slate-500 font-medium">Ningún docente coincide con la búsqueda.</p>
-                    </div>
-                </div>
 
             </div>`;
     } catch (err) {
@@ -321,11 +260,7 @@ Views.director = {
     const cached = Views.director._plantelStudents;
     let allStudents = Array.isArray(cached) ? cached : [];
 
-    const cachedTeachers = Views.director._evalTeachers;
-    let allTeachers = Array.isArray(cachedTeachers) ? cachedTeachers : [];
-
     const totalInProgram = Number(plantelSubtitle?.getAttribute('data-total')) || allStudents.length;
-    const totalTeachers = Number(document.getElementById('director-evals-subtitle')?.getAttribute('data-total')) || allTeachers.length;
 
     const plantelState = {
       page: 1,
@@ -598,58 +533,6 @@ Views.director = {
     });
 
     if (plantelPanel && !plantelPanel.classList.contains('hidden')) renderPlantel();
-
-    // Lógica para sección de evaluación docente
-    const evalsBtn = document.getElementById('director-toggle-evals');
-    const evalsChevronBtn = document.getElementById('director-evals-chevron-btn');
-    const evalsPanel = document.getElementById('director-evals-panel');
-    const evalsChev = document.getElementById('director-evals-chevron');
-    const evalsGrid = document.getElementById('director-evals-grid');
-    const evalsSearch = document.getElementById('director-evals-search');
-    const evalsEmpty = document.getElementById('director-evals-empty');
-
-    function renderEvals() {
-      if (!evalsGrid) return;
-      const q = (evalsSearch?.value || '').trim().toLowerCase();
-      const filtered = allTeachers.filter(t => {
-        if (!q) return true;
-        const hay = `${t.nombres} ${t.apellidos}`.toLowerCase();
-        return hay.includes(q);
-      });
-
-      if (filtered.length === 0) {
-        evalsGrid.innerHTML = '';
-        evalsEmpty?.classList.remove('hidden');
-      } else {
-        evalsEmpty?.classList.add('hidden');
-        evalsGrid.innerHTML = filtered.map(t => buildDirectorTeacherCardHtml(t)).join('');
-      }
-      lucide.createIcons();
-    }
-
-    function toggleEvalsPanel() {
-      if (!evalsPanel) return;
-      const expanded = evalsPanel.classList.contains('hidden');
-      evalsPanel.classList.toggle('hidden', !expanded);
-      evalsBtn?.setAttribute('aria-expanded', String(expanded));
-      evalsChevronBtn?.setAttribute('aria-expanded', String(expanded));
-      if (evalsChev) evalsChev.classList.toggle('rotate-180', expanded);
-      if (expanded) renderEvals();
-    }
-
-    evalsBtn?.addEventListener('click', toggleEvalsPanel);
-    evalsChevronBtn?.addEventListener('click', (e) => {
-      e.preventDefault();
-      toggleEvalsPanel();
-    });
-
-    let evalsDebounce;
-    evalsSearch?.addEventListener('input', () => {
-      clearTimeout(evalsDebounce);
-      evalsDebounce = setTimeout(() => {
-        if (evalsPanel && !evalsPanel.classList.contains('hidden')) renderEvals();
-      }, 200);
-    });
 
     lucide.createIcons();
   }

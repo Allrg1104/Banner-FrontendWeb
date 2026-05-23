@@ -16,6 +16,7 @@ import '../views/profile.js';
 import '../views/student.js';
 import '../views/teacher.js';
 import '../views/director.js';
+import '../views/dashboard-director.js';
 import '../views/director-attendance.js';
 import '../views/director-evaluations.js';
 import '../views/financial.js';
@@ -50,7 +51,8 @@ const Layout = {
                     <nav class="flex-grow space-y-2">
                         <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 px-4">Menú Principal</div>
                         
-                        ${user.rol === 'estudiante' ? this.navItem('/dashboard', 'layout-dashboard', 'Dashboard') : this.navItem(this.getUserDashboardPath(), 'layout-dashboard', 'Dashboard')}
+                        ${user.rol === 'estudiante' ? this.navItem('/dashboard', 'layout-dashboard', 'Dashboard') : ''}
+                        ${user.rol === 'director' || user.rol === 'decano' ? this.navItem('/director-dashboard', 'layout-dashboard', 'Dashboard') : ''}
                         ${user.rol === 'estudiante' ? this.navItem('/enrollment', 'plus-circle', 'Inscripciones') : ''}
                         ${user.rol === 'estudiante' ? this.navItem('/student', 'book-open', 'Mi Academia') : ''}
                         ${user.rol === 'docente' ? this.navItem('/teacher', 'presentation', 'Mis Cursos') : ''}
@@ -179,6 +181,7 @@ const Layout = {
             '#/teacher-dashboard': 'Dashboard Analítico',
             '#/teacher-services': 'Centro de Servicios Docente',
             '#/teacher': 'Gestión de Cursos',
+            '#/director-dashboard': 'Dashboard Director',
             '#/director': 'Analítica SIS',
             '#/director-asistencia': 'Asistencias programa',
             '#/director-evaluations': 'Evaluación Docente',
@@ -201,8 +204,8 @@ const Layout = {
         const map = {
             'estudiante': '/dashboard',
             'docente': '/teacher-dashboard',
-            'director': '/director',
-            'decano': '/director',
+            'director': '/director-dashboard',
+            'decano': '/director-dashboard',
             'registro': '/registro',
             'financiero': '/financial',
             'admin': '/admin'
@@ -225,7 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
         '/teacher-dashboard': 'teacher-dashboard',
         '/teacher-services': 'teacher-services',
         '/teacher': 'teacher',
-        '/director': 'director',
+        '/director-dashboard': 'dashboardDirector',
+            '/director': 'director',
         '/director-asistencia': 'director-attendance',
         '/director-evaluations': 'director-evaluations',
         '/registro': 'registro',
