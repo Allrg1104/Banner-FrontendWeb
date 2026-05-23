@@ -140,7 +140,7 @@ Views.dashboardDirector = {
               <div class="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 border border-emerald-400/20">
                 <i data-lucide="layout-dashboard" class="w-3 h-3"></i> Dashboard Director
               </div>
-              <h2 class="text-3xl md:text-5xl font-black mb-3 tracking-tight leading-tight">Panel de Control <span class="text-[#fab720]">${escapeHtml(programName)}</span></h2>
+              <h2 class="text-3xl md:text-5xl font-black mb-3 tracking-tight leading-tight">Dashboard <span class="text-[#fab720]">${escapeHtml(programName)}</span></h2>
               <p class="text-slate-400 text-base md:text-lg max-w-2xl">
                 Vista consolidada de métricas académicas, asistencia y evaluación docente en tiempo real.
               </p>
