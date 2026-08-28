@@ -5,7 +5,7 @@
 // Híbrido: Detectar si estamos en producción o en entorno local
 const API_BASE_URL = window.location.hostname.includes('unicatolica.online')
     ? 'https://api.unicatolica.online/api'
-    : 'http://localhost:3000/api';
+    : `${window.location.protocol}//${window.location.hostname}:3000/api`;
 
 const API = {
     async request(endpoint, options = {}) {
